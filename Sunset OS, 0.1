@@ -1,0 +1,2204 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SunsetOS</title>
+<style>
+  :root{
+    --fg:#eef2ff; --muted:#aab2d6;
+    --glass: rgba(255,255,255,.08);
+    --glass2: rgba(255,255,255,.06);
+    --stroke: rgba(255,255,255,.14);
+    --shadow: 0 18px 50px rgba(0,0,0,.45);
+    --shadow2: 0 10px 24px rgba(0,0,0,.32);
+    --good:#7CFFB2; --bad:#FF6B6B; --gold:#FFD166; --cyan:#7CE7FF;
+  }
+  html,body{height:100%; margin:0; overflow:hidden;
+    background: radial-gradient(1200px 800px at 30% 20%, #1a2a52 0%, #0a1022 55%, #050611 100%);
+    color:var(--fg); font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+  *{box-sizing:border-box}
+  ::selection{background:rgba(124,231,255,.25)}
+  #wallpaper{
+    position:fixed; inset:0;
+    background:
+      radial-gradient(900px 600px at 70% 25%, rgba(124,231,255,.18) 0%, rgba(124,231,255,0) 60%),
+      radial-gradient(700px 500px at 20% 75%, rgba(255,209,102,.14) 0%, rgba(255,209,102,0) 65%),
+      radial-gradient(800px 600px at 55% 55%, rgba(124,255,178,.10) 0%, rgba(124,255,178,0) 70%);
+    filter:saturate(1.1);
+    pointer-events:none;
+  }
+
+  /* Desktop */
+  #desktop{
+    position:fixed; inset:0 0 44px 0;
+    padding:18px;
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(86px, 86px));
+    grid-auto-rows: 96px;
+    gap:12px;
+    align-content:start;
+    user-select:none;
+  }
+  .icon{
+    width:86px; height:96px;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:8px; padding:10px 8px;
+    border-radius:14px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--fg);
+    cursor:pointer;
+  }
+  .icon:hover{background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.08)}
+  .ico{
+    width:44px; height:44px; border-radius:14px;
+    background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.12);
+    display:grid; place-items:center;
+    box-shadow:0 10px 24px rgba(0,0,0,.25);
+    font-weight:900;
+  }
+  .icon .label{
+    font-size:12px; text-align:center; line-height:1.1;
+    text-shadow:0 1px 10px rgba(0,0,0,.55);
+  }
+
+  /* Taskbar */
+  #taskbar{
+    position:fixed; inset:auto 0 0 0; height:44px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px;
+    background:rgba(10,14,30,.60);
+    border-top:1px solid rgba(255,255,255,.10);
+    backdrop-filter: blur(12px);
+    box-shadow:0 -10px 30px rgba(0,0,0,.35);
+  }
+  #tb-left{display:flex; align-items:center; gap:8px}
+  #tb-mid{display:flex; align-items:center; gap:8px; flex:1; justify-content:center; min-width:0}
+  #tb-right{display:flex; align-items:center; gap:10px}
+  .tb-btn{
+    all:unset; cursor:pointer;
+    padding:8px 10px; border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.06);
+    transition:.12s transform,.12s background,.12s border;
+    font-size:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tb-btn:hover{transform:translateY(-1px); background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16)}
+  .tb-btn:active{transform:translateY(0)}
+  .pill{
+    padding:7px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.06);
+    font-size:12px;
+    color:var(--muted);
+  }
+  .pill b{color:var(--fg)}
+  .task{
+    display:flex; align-items:center; gap:8px;
+    max-width:240px;
+    padding:8px 10px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.05);
+    cursor:pointer;
+    user-select:none;
+    min-width:0;
+  }
+  .task.active{background:rgba(124,231,255,.12); border-color:rgba(124,231,255,.22)}
+  .task .dot{width:10px; height:10px; border-radius:999px; background:rgba(255,255,255,.35); box-shadow:0 0 16px rgba(255,255,255,.15)}
+  .task.active .dot{background:rgba(124,231,255,.7); box-shadow:0 0 16px rgba(124,231,255,.25)}
+  .task .t{font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  /* Start menu */
+  #startMenu{
+    position:fixed; left:10px; bottom:54px; width:340px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(15,18,38,.82);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+    display:none;
+  }
+  #startMenu.open{display:block}
+  #startHead{
+    padding:12px; border-bottom:1px solid rgba(255,255,255,.10);
+    display:flex; gap:10px; align-items:center;
+  }
+  #startHead .avatar{width:36px; height:36px; border-radius:14px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.12); display:grid; place-items:center; font-weight:900}
+  #startHead .meta{display:flex; flex-direction:column; gap:2px}
+  #startHead .meta .name{font-size:13px; font-weight:900}
+  #startHead .meta .sub{font-size:12px; color:var(--muted)}
+  #startBody{padding:10px 10px 12px 10px}
+  #startSearch{
+    width:100%;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(0,0,0,.18);
+    color:var(--fg);
+    padding:10px; border-radius:14px;
+    outline:none; font-size:13px; margin-bottom:10px;
+  }
+  #startSearch:focus{border-color:rgba(124,231,255,.35); box-shadow:0 0 0 4px rgba(124,231,255,.12)}
+  .appgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .appbtn{
+    all:unset; cursor:pointer;
+    padding:10px; border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.05);
+    display:flex; align-items:center; gap:10px;
+    transition:.12s transform,.12s background,.12s border;
+  }
+  .appbtn:hover{transform:translateY(-1px); background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.16)}
+  .appbtn .mini{width:28px; height:28px; border-radius:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); display:grid; place-items:center; font-weight:900; font-size:12px}
+  .appbtn .txt{display:flex; flex-direction:column; min-width:0}
+  .appbtn .txt b{font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .appbtn .txt span{font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  /* Window layer */
+  #winLayer{position:fixed; inset:0 0 44px 0; pointer-events:none;}
+  .window{
+    position:absolute;
+    min-width:280px; min-height:200px;
+    width:560px; height:360px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(20,24,46,.78);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+    pointer-events:auto;
+    display:flex; flex-direction:column;
+  }
+  .titlebar{
+    height:42px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 10px 10px 12px;
+    background:rgba(255,255,255,.03);
+    border-bottom:1px solid rgba(255,255,255,.10);
+    cursor:grab; user-select:none;
+  }
+  .titlebar:active{cursor:grabbing}
+  .titlebar .left{display:flex; align-items:center; gap:10px; min-width:0}
+  .titlebar .badge{width:22px; height:22px; border-radius:8px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); display:grid; place-items:center; font-size:12px; font-weight:900}
+  .titlebar .ttl{font-size:13px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .wbtns{display:flex; gap:6px}
+  .wbtn{
+    all:unset; cursor:pointer;
+    width:30px; height:26px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.06);
+    display:grid; place-items:center;
+    font-size:12px;
+    transition:.12s transform,.12s background,.12s border;
+  }
+  .wbtn:hover{transform:translateY(-1px); background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.18)}
+  .wbtn.close:hover{background:rgba(255,107,107,.16); border-color:rgba(255,107,107,.22)}
+  .content{flex:1; display:flex; min-height:0; background:rgba(0,0,0,.10)}
+  .pane{min-height:0; overflow:auto}
+  .resize{position:absolute; right:0; bottom:0; width:18px; height:18px; cursor:nwse-resize;
+    background:linear-gradient(135deg, rgba(255,255,255,.0) 0%, rgba(255,255,255,.12) 100%);
+    border-top-left-radius:10px;
+  }
+
+  /* Explorer */
+  .explorer{width:100%; display:grid; grid-template-columns:190px 1fr; min-height:0}
+  .sidebar{border-right:1px solid rgba(255,255,255,.10); padding:12px; background:rgba(255,255,255,.03)}
+  .sideitem{padding:9px 10px; border-radius:12px; border:1px solid transparent; color:var(--muted); cursor:pointer}
+  .sideitem:hover{background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.08); color:var(--fg)}
+  .sideitem.active{background:rgba(124,231,255,.10); border-color:rgba(124,231,255,.18); color:var(--fg)}
+  .mainpane{padding:12px; min-height:0; display:flex; flex-direction:column; gap:10px}
+  .pathbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    padding:10px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
+    font-size:12px; color:var(--muted)}
+  .pathbar b{color:var(--fg)}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .btn{
+    all:unset; cursor:pointer;
+    padding:9px 10px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.05);
+    font-size:12px;
+    transition:.12s transform,.12s background,.12s border;
+  }
+  .btn:hover{transform:translateY(-1px); background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16)}
+  .btn:active{transform:translateY(0)}
+  .btn.good:hover{background:rgba(124,255,178,.12); border-color:rgba(124,255,178,.20)}
+  .btn.bad:hover{background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.20)}
+  .btn.cyan:hover{background:rgba(124,231,255,.12); border-color:rgba(124,231,255,.20)}
+  .input{border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.18); color:var(--fg); padding:9px 10px; border-radius:12px; outline:none; font-size:12px; min-width:170px}
+  .input:focus{border-color:rgba(124,231,255,.35); box-shadow:0 0 0 4px rgba(124,231,255,.10)}
+  .filegrid{
+    flex:1; min-height:0;
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap:10px;
+    overflow:auto;
+    padding-right:4px;
+  }
+  .file{
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(0,0,0,.10);
+    padding:10px;
+    cursor:pointer;
+    display:flex; flex-direction:column; gap:8px;
+    transition:.12s transform,.12s background,.12s border;
+  }
+  .file:hover{transform:translateY(-1px); background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.16)}
+  .file .fhead{display:flex; align-items:center; gap:10px}
+  .file .ficon{width:32px; height:32px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); display:grid; place-items:center; font-weight:900}
+  .file .fname{font-size:12px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .file .fmeta{font-size:11px; color:var(--muted)}
+
+  /* Notes/editor */
+  .notesWrap{width:100%; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:0}
+  textarea{
+    width:100%; flex:1; min-height:0; resize:none;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(0,0,0,.20);
+    color:var(--fg);
+    padding:12px; border-radius:14px; outline:none;
+    font-size:13px; line-height:1.35;
+  }
+  textarea:focus{border-color:rgba(124,231,255,.35); box-shadow:0 0 0 4px rgba(124,231,255,.10)}
+  .statusline{font-size:12px; color:var(--muted); display:flex; justify-content:space-between; gap:10px; align-items:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+  /* Terminal */
+  .term{width:100%; display:flex; flex-direction:column; min-height:0}
+  .termOut{
+    flex:1; min-height:0; padding:12px; overflow:auto;
+    font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:12px; line-height:1.35;
+    background:rgba(0,0,0,.18);
+  }
+  .termRow{display:flex; gap:8px; align-items:center; padding:10px 12px; border-top:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03)}
+  .prompt{font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; font-size:12px; color:rgba(124,231,255,.9)}
+
+  /* Settings / cards */
+  .settings{width:100%; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:0}
+  .card{
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(0,0,0,.12);
+    border-radius:14px;
+    padding:12px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .row .k{color:var(--muted); font-size:12px}
+  .row .v{font-size:12px; font-weight:900}
+  .switch{width:44px; height:26px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); position:relative; cursor:pointer}
+  .knob{position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:999px; background:rgba(255,255,255,.22); transition:.12s transform,.12s background}
+  .switch.on{background:rgba(124,231,255,.18); border-color:rgba(124,231,255,.22)}
+  .switch.on .knob{transform:translateX(18px); background:rgba(124,231,255,.55)}
+
+  /* Context menu */
+  #ctx{
+    position:fixed; min-width:200px;
+    border-radius:14px; border:1px solid rgba(255,255,255,.12);
+    background:rgba(15,18,38,.92);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow2);
+    overflow:hidden;
+    display:none;
+    z-index:9999;
+  }
+  .ctxitem{padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.08); cursor:pointer; font-size:12px}
+  .ctxitem:last-child{border-bottom:none}
+  .ctxitem:hover{background:rgba(255,255,255,.07)}
+  .ctxitem small{color:var(--muted)}
+
+  /* App Manager */
+  .table{width:100%; border-collapse:separate; border-spacing:0 8px}
+  .tr{background:rgba(0,0,0,.10); border:1px solid rgba(255,255,255,.10); border-radius:14px; overflow:hidden}
+  .trow{
+    display:grid;
+    grid-template-columns: 1fr 120px 190px;
+    gap:10px;
+    padding:10px;
+    align-items:center;
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:14px;
+    background:rgba(0,0,0,.10);
+  }
+  .trow .name{font-weight:900; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .trow .meta{font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .trow .actions{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
+
+</style>
+</head>
+<body>
+<div id="wallpaper"></div>
+
+<div id="desktop" aria-label="Bureau"></div>
+<div id="winLayer" aria-label="Fenêtres"></div>
+
+<div id="startMenu" role="dialog" aria-label="Menu Démarrer">
+  <div id="startHead">
+    <div class="avatar">S</div>
+    <div class="meta">
+      <div class="name">SunsetOS</div>
+      <div class="sub">Local • Offline • Simple</div>
+    </div>
+  </div>
+  <div id="startBody">
+    <input id="startSearch" placeholder="Rechercher une app…" />
+    <div class="appgrid" id="startApps"></div>
+  </div>
+</div>
+
+<div id="ctx"></div>
+
+<div id="taskbar">
+  <div id="tb-left">
+    <button class="tb-btn" id="startBtn">☰ <span>Start</span></button>
+    <button class="tb-btn" id="showDeskBtn">▢ <span>Bureau</span></button>
+  </div>
+  <div id="tb-mid" aria-label="Tâches"></div>
+  <div id="tb-right">
+    <div class="pill" id="netPill"><b>Offline</b></div>
+    <div class="pill"><b id="clock">--:--</b></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // -------------------- Storage --------------------
+  const LS_KEY = "sunsetos_v2";
+
+  const demoEJ = JSON.stringify({
+    ej: 1,
+    name: "EJ Paint",
+    id: "ej_paint",
+    icon: "🎨",
+    version: "1.0",
+    entry: {
+      type: "html",
+      html: `
+        <div style="padding:12px;display:flex;flex-direction:column;gap:10px;height:100%;box-sizing:border-box">
+          <div style="font-weight:900">EJ Paint</div>
+          <canvas id="cv" width="900" height="520" style="width:100%;flex:1;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.15)"></canvas>
+          <div style="color:rgba(255,255,255,.70);font-size:12px">Clique + drag pour dessiner • Bouton droit = effacer</div>
+        </div>
+        <script>
+          const cv = document.getElementById('cv');
+          const ctx = cv.getContext('2d');
+          let down=false, erase=false;
+          function pos(e){
+            const r=cv.getBoundingClientRect();
+            return {x:(e.clientX-r.left)*cv.width/r.width, y:(e.clientY-r.top)*cv.height/r.height};
+          }
+          cv.addEventListener('mousedown', e=>{ down=true; erase=(e.button===2); });
+          cv.addEventListener('mouseup', ()=>down=false);
+          cv.addEventListener('mouseleave', ()=>down=false);
+          cv.addEventListener('mousemove', e=>{
+            if(!down) return;
+            const p=pos(e);
+            ctx.beginPath();
+            ctx.arc(p.x,p.y, erase?18:4, 0, Math.PI*2);
+            ctx.fillStyle = erase ? 'rgba(0,0,0,.15)' : 'rgba(255,255,255,.85)';
+            ctx.fill();
+          });
+          cv.addEventListener('contextmenu', e=>e.preventDefault());
+        <\/script>
+      `
+    }
+  }, null, 2);
+
+  const defaults = {
+    theme: { glow:true, compact:false },
+    notes: "Bienvenue sur SunsetOS.\n\n- Explorateur : crée des fichiers\n- Terminal : help\n- Easy Jet : navigateur\n- .EJ : apps installables\n",
+    installedApps: {},
+    easyjet: { favorites: ["easyjet://home", "easyjet://help", "https://example.com"] },
+    fs: {
+      "/": { type:"dir", children:["Documents","Images","Téléchargements","Corbeille"] },
+      "/Documents": { type:"dir", children:["Bienvenue.txt"] },
+      "/Documents/Bienvenue.txt": { type:"file", mime:"text/plain", content:"Bienvenue sur SunsetOS.\n\nTout est stocké en localStorage.\nTu peux créer/renommer/supprimer des fichiers.\n\nAstuce: Téléchargements contient Demo.EJ (installable)." },
+      "/Images": { type:"dir", children:[] },
+      "/Téléchargements": { type:"dir", children:["Demo.EJ"] },
+      "/Téléchargements/Demo.EJ": { type:"file", mime:"application/x-ej", content: demoEJ },
+      "/Corbeille": { type:"dir", children:[] },
+    }
+  };
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return structuredClone(defaults);
+      const parsed = JSON.parse(raw);
+      return {
+        theme: Object.assign({}, defaults.theme, parsed.theme || {}),
+        notes: typeof parsed.notes === "string" ? parsed.notes : defaults.notes,
+        installedApps: parsed.installedApps && typeof parsed.installedApps==="object" ? parsed.installedApps : {},
+        easyjet: parsed.easyjet && typeof parsed.easyjet==="object" ? parsed.easyjet : structuredClone(defaults.easyjet),
+        fs: parsed.fs && typeof parsed.fs === "object" ? parsed.fs : structuredClone(defaults.fs),
+      };
+    }catch(e){
+      return structuredClone(defaults);
+    }
+  }
+  function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  let state = loadState();
+
+  // -------------------- Helpers --------------------
+  const $ = (q, root=document) => root.querySelector(q);
+  const $$ = (q, root=document) => Array.from(root.querySelectorAll(q));
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const fmtTime = (d) => String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  const rand = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+  function getExt(name){
+    const i = name.lastIndexOf(".");
+    return i>=0 ? name.slice(i+1).toLowerCase() : "";
+  }
+
+  // -------------------- DOM --------------------
+  const desktop = $("#desktop");
+  const winLayer = $("#winLayer");
+  const taskMid = $("#tb-mid");
+  const startMenu = $("#startMenu");
+  const startBtn = $("#startBtn");
+  const showDeskBtn = $("#showDeskBtn");
+  const clockEl = $("#clock");
+  const netPill = $("#netPill");
+  const startSearch = $("#startSearch");
+  const startApps = $("#startApps");
+  const ctx = $("#ctx");
+
+  // -------------------- Apps --------------------
+  const APPS = [
+    { id:"explorer", name:"Explorateur", desc:"Fichiers & dossiers", icon:"📁", open: () => openExplorer("/") },
+    { id:"easyjet", name:"Easy Jet", desc:"Navigateur web", icon:"🌐", open: () => openEasyJet() },
+    { id:"terminal", name:"Terminal", desc:"Commandes système", icon:"⌘", open: () => openTerminal() },
+    { id:"notes", name:"Notes", desc:"Bloc-notes", icon:"📝", open: () => openNotes() },
+    { id:"appmgr", name:"App Manager", desc:"Apps .EJ installées", icon:"🧩", open: () => openAppManager() },
+    { id:"settings", name:"Paramètres", desc:"UI & système", icon:"⚙️", open: () => openSettings() },
+    { id:"about", name:"À propos", desc:"Infos système", icon:"ℹ️", open: () => openAbout() },
+    { id:"recycle", name:"Corbeille", desc:"Éléments supprimés", icon:"🗑️", open: () => openExplorer("/Corbeille") },
+  ];
+
+  const DESKTOP_ICONS = [
+    { app:"explorer", label:"Explorateur" },
+    { app:"easyjet", label:"Easy Jet" },
+    { app:"notes", label:"Notes" },
+    { app:"terminal", label:"Terminal" },
+    { app:"appmgr", label:"App Manager" },
+    { app:"settings", label:"Paramètres" },
+    { app:"recycle", label:"Corbeille" },
+  ];
+
+  // -------------------- Desktop --------------------
+  function renderDesktop(){
+    desktop.innerHTML = "";
+    for(const item of DESKTOP_ICONS){
+      const app = APPS.find(a=>a.id===item.app);
+      const el = document.createElement("div");
+      el.className = "icon";
+      el.innerHTML = `<div class="ico">${app.icon}</div><div class="label">${item.label}</div>`;
+      el.addEventListener("dblclick", () => app.open());
+      el.addEventListener("click", () => focusNone());
+      desktop.appendChild(el);
+    }
+
+    desktop.oncontextmenu = (e)=>{
+      e.preventDefault();
+      openContext(e.clientX, e.clientY, [
+        {label:"Nouveau fichier texte", sub:"Dans Documents", action: ()=>{ createTextFile("/Documents"); openExplorer("/Documents"); }},
+        {label:"Ouvrir Explorateur", sub:"Racine /", action: ()=> openExplorer("/")},
+        {label:"Easy Jet", sub:"Navigateur", action: ()=> openEasyJet()},
+        {label:"Paramètres", sub:"UI", action: ()=> openSettings()},
+        {label:"Rafraîchir", sub:"", action: ()=> renderDesktop()},
+      ]);
+    };
+  }
+
+  // -------------------- Window manager --------------------
+  let zTop = 10;
+  const windows = new Map(); // wid -> {el, minimized, maximized, prevRect, title, appId}
+
+  function makeWindow({title, badge, contentNode, width=560, height=360, x=120, y=80, appId="app"}){
+    const wid = "w_" + Math.random().toString(16).slice(2);
+    const w = document.createElement("div");
+    w.className = "window";
+    w.style.width = width+"px";
+    w.style.height = height+"px";
+    w.style.left = x+"px";
+    w.style.top = y+"px";
+    w.style.zIndex = (++zTop);
+
+    w.innerHTML = `
+      <div class="titlebar">
+        <div class="left">
+          <div class="badge">${badge || "■"}</div>
+          <div class="ttl"></div>
+        </div>
+        <div class="wbtns">
+          <button class="wbtn min" title="Réduire">—</button>
+          <button class="wbtn max" title="Agrandir">▢</button>
+          <button class="wbtn close close" title="Fermer">✕</button>
+        </div>
+      </div>
+      <div class="content"></div>
+      <div class="resize" title="Redimensionner"></div>
+    `;
+    $(".ttl", w).textContent = title;
+    $(".content", w).appendChild(contentNode);
+
+    w.addEventListener("mousedown", () => focusWindow(wid));
+    $(".wbtn.close", w).addEventListener("click", () => closeWindow(wid));
+    $(".wbtn.min", w).addEventListener("click", () => minimizeWindow(wid));
+    $(".wbtn.max", w).addEventListener("click", () => toggleMaximize(wid));
+
+    $(".titlebar", w).addEventListener("mousedown", (e)=> startDrag(wid, e));
+    $(".resize", w).addEventListener("mousedown", (e)=> startResize(wid, e));
+
+    winLayer.appendChild(w);
+    windows.set(wid, { el:w, minimized:false, maximized:false, prevRect:null, title, appId });
+    addTask(wid, title);
+    focusWindow(wid);
+    return wid;
+  }
+
+  function focusWindow(wid){
+    const obj = windows.get(wid);
+    if(!obj) return;
+    obj.el.style.zIndex = (++zTop);
+    $$(".task", taskMid).forEach(t => t.classList.toggle("active", t.dataset.wid===wid));
+  }
+  function focusNone(){ $$(".task", taskMid).forEach(t => t.classList.remove("active")); }
+
+  function closeWindow(wid){
+    const obj = windows.get(wid);
+    if(!obj) return;
+    obj.el.remove();
+    windows.delete(wid);
+    const task = $(`.task[data-wid="${wid}"]`, taskMid);
+    if(task) task.remove();
+  }
+
+  function minimizeWindow(wid){
+    const obj = windows.get(wid);
+    if(!obj) return;
+    obj.minimized = !obj.minimized;
+    obj.el.style.display = obj.minimized ? "none" : "flex";
+    if(!obj.minimized) focusWindow(wid); else focusNone();
+    const task = $(`.task[data-wid="${wid}"]`, taskMid);
+    if(task) task.classList.toggle("active", !obj.minimized);
+  }
+
+  function toggleMaximize(wid){
+    const obj = windows.get(wid);
+    if(!obj) return;
+    const el = obj.el;
+    if(!obj.maximized){
+      obj.prevRect = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+      el.style.left = "12px";
+      el.style.top = "12px";
+      el.style.width = "calc(100% - 24px)";
+      el.style.height = "calc(100% - 24px)";
+      obj.maximized = true;
+    }else{
+      const p = obj.prevRect;
+      el.style.left = p.left; el.style.top = p.top; el.style.width = p.width; el.style.height = p.height;
+      obj.maximized = false;
+      obj.prevRect = null;
+    }
+    focusWindow(wid);
+  }
+
+  function addTask(wid, title){
+    const t = document.createElement("div");
+    t.className = "task active";
+    t.dataset.wid = wid;
+    t.innerHTML = `<div class="dot"></div><div class="t"></div>`;
+    $(".t", t).textContent = title;
+    t.addEventListener("click", ()=>{
+      const obj = windows.get(wid);
+      if(!obj) return;
+      if(obj.minimized) { obj.minimized = false; obj.el.style.display="flex"; focusWindow(wid); return; }
+      const isActive = t.classList.contains("active");
+      if(isActive) { minimizeWindow(wid); return; }
+      focusWindow(wid);
+    });
+    taskMid.appendChild(t);
+  }
+
+  // Drag
+  let drag = null;
+  function startDrag(wid, e){
+    const obj = windows.get(wid);
+    if(!obj || obj.maximized) return;
+    const el = obj.el;
+    const rect = el.getBoundingClientRect();
+    drag = { wid, ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+    focusWindow(wid);
+    window.addEventListener("mousemove", onDragMove);
+    window.addEventListener("mouseup", stopDrag, {once:true});
+  }
+  function onDragMove(e){
+    if(!drag) return;
+    const obj = windows.get(drag.wid);
+    if(!obj) return;
+    const el = obj.el;
+    const maxX = window.innerWidth - 40;
+    const maxY = window.innerHeight - 44 - 40;
+    el.style.left = clamp(e.clientX - drag.ox, 10, maxX) + "px";
+    el.style.top  = clamp(e.clientY - drag.oy, 10, maxY) + "px";
+  }
+  function stopDrag(){ drag = null; window.removeEventListener("mousemove", onDragMove); }
+
+  // Resize
+  let rez = null;
+  function startResize(wid, e){
+    e.preventDefault();
+    const obj = windows.get(wid);
+    if(!obj || obj.maximized) return;
+    const rect = obj.el.getBoundingClientRect();
+    rez = { wid, startX:e.clientX, startY:e.clientY, w:rect.width, h:rect.height };
+    focusWindow(wid);
+    window.addEventListener("mousemove", onResizeMove);
+    window.addEventListener("mouseup", stopResize, {once:true});
+  }
+  function onResizeMove(e){
+    if(!rez) return;
+    const obj = windows.get(rez.wid);
+    if(!obj) return;
+    const el = obj.el;
+    const nw = clamp(rez.w + (e.clientX - rez.startX), 280, window.innerWidth - 30);
+    const nh = clamp(rez.h + (e.clientY - rez.startY), 200, window.innerHeight - 44 - 30);
+    el.style.width = nw+"px";
+    el.style.height = nh+"px";
+  }
+  function stopResize(){ rez=null; window.removeEventListener("mousemove", onResizeMove); }
+
+  // -------------------- Context menu --------------------
+  function openContext(x,y, items){
+    ctx.innerHTML = "";
+    for(const it of items){
+      const row = document.createElement("div");
+      row.className = "ctxitem";
+      row.innerHTML = `${it.label} ${it.sub ? `<br><small>${it.sub}</small>` : ""}`;
+      row.addEventListener("click", ()=>{ closeContext(); it.action?.(); });
+      ctx.appendChild(row);
+    }
+    ctx.style.display = "block";
+    // after show, clamp pos
+    const r = ctx.getBoundingClientRect();
+    ctx.style.left = clamp(x, 6, window.innerWidth - r.width - 6) + "px";
+    ctx.style.top  = clamp(y, 6, window.innerHeight - 44 - r.height - 6) + "px";
+  }
+  function closeContext(){ ctx.style.display="none"; }
+  window.addEventListener("click", closeContext);
+  window.addEventListener("contextmenu", (e)=>{
+    if(e.target.closest("#desktop") || e.target.closest(".window") || e.target.closest("#taskbar") || e.target.closest("#startMenu")){
+      e.preventDefault();
+      closeContext();
+    }
+  });
+
+  // -------------------- FS --------------------
+  function exists(path){ return !!state.fs[path]; }
+  function isDir(path){ return exists(path) && state.fs[path].type==="dir"; }
+  function isFile(path){ return exists(path) && state.fs[path].type==="file"; }
+
+  function baseName(p){
+    if(p==="/") return "/";
+    const parts = p.split("/").filter(Boolean);
+    return parts[parts.length-1] || "/";
+  }
+  function parentPath(p){
+    if(p==="/") return null;
+    const parts = p.split("/").filter(Boolean);
+    parts.pop();
+    return "/"+parts.join("/");
+  }
+  function ensureDir(path){ if(!exists(path)) state.fs[path] = { type:"dir", children:[] }; }
+  function addChild(dirPath, name){
+    const dir = state.fs[dirPath];
+    if(!dir || dir.type!=="dir") return;
+    if(!dir.children.includes(name)) dir.children.push(name);
+  }
+  function removeChild(dirPath, name){
+    const dir = state.fs[dirPath];
+    if(!dir || dir.type!=="dir") return;
+    dir.children = dir.children.filter(x=>x!==name);
+  }
+
+  function moveToTrash(path){
+    if(path==="/Corbeille" || path==="/") return false;
+    const pp = parentPath(path);
+    if(!pp) return false;
+    const name = baseName(path);
+
+    removeChild(pp, name);
+
+    ensureDir("/Corbeille");
+    let newName = name, i=1;
+    while(state.fs["/Corbeille"].children.includes(newName)){
+      i++; newName = name + " ("+i+")";
+    }
+    addChild("/Corbeille", newName);
+
+    const newPath = "/Corbeille/"+newName;
+    state.fs[newPath] = state.fs[path];
+    delete state.fs[path];
+
+    // descendants
+    if(state.fs[newPath].type==="dir"){
+      const oldPrefix = path, newPrefix = newPath;
+      Object.keys(state.fs).forEach(k=>{
+        if(k.startsWith(oldPrefix+"/")){
+          const tail = k.slice(oldPrefix.length);
+          state.fs[newPrefix+tail] = state.fs[k];
+          delete state.fs[k];
+        }
+      });
+    }
+
+    saveState();
+    return true;
+  }
+
+  function restoreFromTrash(trashPath, targetDir="/Documents"){
+    if(!trashPath.startsWith("/Corbeille/")) return false;
+    if(!isDir(targetDir)) targetDir="/Documents";
+    const name = baseName(trashPath);
+
+    removeChild("/Corbeille", name);
+
+    let newName = name, i=1;
+    while(state.fs[targetDir].children.includes(newName)){
+      i++; newName = name + " ("+i+")";
+    }
+    addChild(targetDir, newName);
+
+    const newPath = targetDir+"/"+newName;
+    state.fs[newPath] = state.fs[trashPath];
+    delete state.fs[trashPath];
+
+    if(state.fs[newPath].type==="dir"){
+      const oldPrefix = trashPath, newPrefix = newPath;
+      Object.keys(state.fs).forEach(k=>{
+        if(k.startsWith(oldPrefix+"/")){
+          const tail = k.slice(oldPrefix.length);
+          state.fs[newPrefix+tail] = state.fs[k];
+          delete state.fs[k];
+        }
+      });
+    }
+
+    saveState();
+    return true;
+  }
+
+  function createTextFile(dirPath, nameMaybe){
+    if(!isDir(dirPath)) dirPath="/Documents";
+    const base = (nameMaybe && nameMaybe.trim()) ? nameMaybe.trim() : "Nouveau fichier.txt";
+    let name = base.includes(".") ? base : base + ".txt";
+    let i = 1;
+    while(state.fs[dirPath].children.includes(name)){
+      i++;
+      const dot = name.lastIndexOf(".");
+      const stem = dot>0 ? name.slice(0,dot) : name;
+      const ext = dot>0 ? name.slice(dot) : "";
+      name = stem.replace(/\s\(\d+\)$/, "") + " ("+i+")" + ext;
+    }
+    addChild(dirPath, name);
+    state.fs[dirPath+"/"+name] = { type:"file", mime:"text/plain", content:"" };
+    saveState();
+    return dirPath+"/"+name;
+  }
+
+  function renamePath(path, newName){
+    if(path==="/" || path==="/Corbeille") return false;
+    const pp = parentPath(path);
+    if(!pp || !isDir(pp)) return false;
+    if(!newName || !newName.trim()) return false;
+    newName = newName.trim();
+    const oldName = baseName(path);
+    if(newName === oldName) return true;
+    if(state.fs[pp].children.includes(newName)) return false;
+
+    removeChild(pp, oldName);
+    addChild(pp, newName);
+
+    const newPath = pp+"/"+newName;
+    state.fs[newPath] = state.fs[path];
+    delete state.fs[path];
+
+    Object.keys(state.fs).forEach(k=>{
+      if(k.startsWith(path+"/")){
+        const tail = k.slice(path.length);
+        state.fs[newPath+tail] = state.fs[k];
+        delete state.fs[k];
+      }
+    });
+
+    saveState();
+    return true;
+  }
+
+  // -------------------- EJ packages (.EJ) --------------------
+  function parseEJ(raw){
+    let obj;
+    try{ obj = JSON.parse(raw); }catch(e){ return { ok:false, err:"EJ invalide (JSON cassé)" }; }
+    if(!obj || obj.ej !== 1) return { ok:false, err:"EJ invalide (ej:1 manquant)" };
+    if(!obj.id || !obj.name) return { ok:false, err:"EJ invalide (id/name manquants)" };
+    if(!obj.entry || obj.entry.type !== "html" || typeof obj.entry.html !== "string")
+      return { ok:false, err:"EJ invalide (entry html manquant)" };
+    return { ok:true, app: obj };
+  }
+
+  function installEJ(app){
+    state.installedApps = state.installedApps || {};
+    state.installedApps[app.id] = {
+      id: app.id,
+      name: app.name,
+      icon: app.icon || "📦",
+      version: app.version || "1.0",
+      entryHtml: app.entry.html
+    };
+    saveState();
+    renderStartApps(startSearch.value || "");
+  }
+
+  function uninstallEJ(appId){
+    if(!state.installedApps?.[appId]) return;
+    delete state.installedApps[appId];
+    saveState();
+    renderStartApps(startSearch.value || "");
+  }
+
+  function openInstalledEJ(appId){
+    const a = state.installedApps?.[appId];
+    if(!a) return openMessage("Erreur", "App EJ introuvable: " + appId);
+
+    const wrap = document.createElement("div");
+    wrap.style.width="100%";
+    wrap.style.minHeight="0";
+    wrap.style.display="flex";
+
+    const frame = document.createElement("iframe");
+    frame.style.width="100%";
+    frame.style.flex="1";
+    frame.style.minHeight="0";
+    frame.style.border="0";
+    frame.style.background="rgba(0,0,0,.12)";
+    frame.setAttribute("sandbox", "allow-scripts allow-forms");
+    const doc = `
+      <!doctype html><html><head><meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <style>
+        html,body{height:100%;margin:0;background:transparent;color:#eef2ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+      </style>
+      </head><body>${a.entryHtml}</body></html>
+    `;
+    frame.srcdoc = doc;
+    wrap.appendChild(frame);
+
+    makeWindow({
+      title: `${a.icon} ${a.name}`,
+      badge: a.icon || "📦",
+      contentNode: wrap,
+      width: 900, height: 540,
+      x: rand(80, 220), y: rand(50, 140),
+      appId: "ejapp"
+    });
+  }
+
+  function openEJInstallerFromPath(path){
+    if(!isFile(path)) return;
+    const node = state.fs[path];
+    const parsed = parseEJ(node.content || "");
+
+    const wrap = document.createElement("div");
+    wrap.style.width="100%";
+    wrap.style.padding="12px";
+    wrap.style.display="flex";
+    wrap.style.flexDirection="column";
+    wrap.style.gap="10px";
+
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `<div style="font-weight:900">Easy Jet Installer</div>
+      <div style="color:rgba(255,255,255,.75);font-size:12px;line-height:1.45;white-space:pre-wrap"></div>`;
+    const msg = card.querySelector("div:last-child");
+
+    const actions = document.createElement("div");
+    actions.className="toolbar";
+
+    const installBtn = document.createElement("button");
+    installBtn.className="btn good";
+    installBtn.textContent="Installer";
+
+    const openBtn = document.createElement("button");
+    openBtn.className="btn cyan";
+    openBtn.textContent="Ouvrir";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className="btn";
+    cancelBtn.textContent="Fermer";
+
+    actions.appendChild(installBtn);
+    actions.appendChild(openBtn);
+    actions.appendChild(cancelBtn);
+
+    wrap.appendChild(card);
+    wrap.appendChild(actions);
+
+    let wid = null;
+
+    if(!parsed.ok){
+      msg.textContent = `Fichier: ${path}\n\n❌ ${parsed.err}`;
+      installBtn.disabled = true;
+      openBtn.disabled = true;
+    }else{
+      const app = parsed.app;
+      msg.textContent = `Fichier: ${path}\n\n✅ App EJ détectée
+- Nom: ${app.name}
+- ID: ${app.id}
+- Version: ${app.version||"1.0"}
+- Icône: ${app.icon||"📦"}`;
+
+      installBtn.addEventListener("click", ()=>{
+        installEJ(app);
+        openMessage("Installé", `${app.name} est maintenant dans le Start Menu.\n(ID: ${app.id})`);
+      });
+
+      openBtn.addEventListener("click", ()=>{
+        // preview without install: temporary run (not saved)
+        const tmpId = "__preview__" + Math.random().toString(16).slice(2);
+        state.installedApps[tmpId] = { id: tmpId, name: app.name+" (preview)", icon: app.icon||"📦", version: app.version||"1.0", entryHtml: app.entry.html };
+        openInstalledEJ(tmpId);
+        setTimeout(()=>{ delete state.installedApps[tmpId]; saveState(); }, 1500);
+      });
+    }
+
+    cancelBtn.addEventListener("click", ()=>{ if(wid) closeWindow(wid); });
+
+    wid = makeWindow({
+      title:"Installer (.EJ)",
+      badge:"📦",
+      contentNode: wrap,
+      width: 580, height: 340,
+      x: rand(140, 300), y: rand(90, 210),
+      appId:"ejinstaller"
+    });
+  }
+
+  // -------------------- Explorer --------------------
+  function openExplorer(startPath="/"){
+    const root = document.createElement("div");
+    root.className = "explorer";
+
+    const sidebar = document.createElement("div");
+    sidebar.className = "sidebar pane";
+
+    const main = document.createElement("div");
+    main.className = "mainpane pane";
+
+    const pathbar = document.createElement("div");
+    pathbar.className = "pathbar";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "toolbar";
+
+    const btnUp = document.createElement("button");
+    btnUp.className = "btn";
+    btnUp.textContent = "↑ Parent";
+
+    const btnNew = document.createElement("button");
+    btnNew.className = "btn good";
+    btnNew.textContent = "+ Nouveau .txt";
+
+    const btnPaste = document.createElement("button");
+    btnPaste.className = "btn cyan";
+    btnPaste.textContent = "Coller";
+    btnPaste.disabled = true;
+
+    const search = document.createElement("input");
+    search.className = "input";
+    search.placeholder = "Filtrer…";
+
+    toolbar.appendChild(btnUp);
+    toolbar.appendChild(btnNew);
+    toolbar.appendChild(btnPaste);
+    toolbar.appendChild(search);
+
+    const grid = document.createElement("div");
+    grid.className = "filegrid";
+
+    main.appendChild(pathbar);
+    main.appendChild(toolbar);
+    main.appendChild(grid);
+
+    root.appendChild(sidebar);
+    root.appendChild(main);
+
+    const places = [
+      { label:"Racine (/)", path:"/" },
+      { label:"Documents", path:"/Documents" },
+      { label:"Images", path:"/Images" },
+      { label:"Téléchargements", path:"/Téléchargements" },
+      { label:"Corbeille", path:"/Corbeille" },
+    ];
+
+    let current = startPath;
+    let clipboard = null; // {path, action:"cut"|"copy"}
+
+    function setPlaceActive(){ $$(".sideitem", sidebar).forEach(it=>it.classList.toggle("active", it.dataset.path===current)); }
+
+    function renderSidebar(){
+      sidebar.innerHTML = "";
+      for(const p of places){
+        const it = document.createElement("div");
+        it.className = "sideitem";
+        it.textContent = p.label;
+        it.dataset.path = p.path;
+        it.addEventListener("click", ()=>{ current = p.path; render(); });
+        sidebar.appendChild(it);
+      }
+      setPlaceActive();
+    }
+
+    function renderPathbar(){
+      const p = current;
+      const parts = p.split("/").filter(Boolean);
+      let acc = "";
+      const crumbs = [{name:"/", path:"/"}];
+      for(const part of parts){
+        acc += "/"+part;
+        crumbs.push({name:part, path:acc});
+      }
+      pathbar.innerHTML = "";
+      pathbar.appendChild(document.createTextNode("Chemin: "));
+      crumbs.forEach((c, idx)=>{
+        const b = document.createElement("b");
+        b.style.cursor = "pointer";
+        b.textContent = c.name;
+        b.addEventListener("click", ()=>{ current = c.path; render(); });
+        pathbar.appendChild(b);
+        if(idx < crumbs.length-1) pathbar.appendChild(document.createTextNode(" / "));
+      });
+    }
+
+    function fileIcon(node, name){
+      const ext = getExt(name);
+      if(node.type==="dir") return "📁";
+      if(ext==="ej") return "📦";
+      if(ext==="exe") return "🧱";
+      if(ext==="apk") return "📱";
+      const n = node.mime || "";
+      if(n.startsWith("text/")) return "📝";
+      return "📄";
+    }
+
+    function openFile(path){
+      if(isDir(path)){ current = path; render(); return; }
+      if(!isFile(path)) return;
+
+      const name = baseName(path);
+      const ext = getExt(name);
+      const node = state.fs[path];
+
+      // EJ
+      if(ext === "ej" || node.mime === "application/x-ej"){ openEJInstallerFromPath(path); return; }
+
+      // EXE / APK (can't run in browser OS)
+      if(ext === "exe" || ext === "apk"){
+        openMessage("Impossible",
+          `${name}\n\nCe type de fichier ne peut pas s'exécuter dans SunsetOS (web).\n`+
+          `→ Convertis-le en .EJ (app SunsetOS) ou ouvre-le dans un vrai OS.`
+        );
+        return;
+      }
+
+      // text
+      if(node.mime === "text/plain"){ openTextEditor(path); return; }
+
+      openMessage("Ouvrir", "Type non supporté: " + (node.mime || "unknown"));
+    }
+
+    function renderGrid(){
+      grid.innerHTML = "";
+      if(!isDir(current)){ openMessage("Erreur", "Dossier invalide: "+current); current="/"; }
+      const dir = state.fs[current];
+      const q = (search.value || "").toLowerCase();
+
+      const entries = (dir.children || []).slice().sort((a,b)=>a.localeCompare(b, "fr"));
+      const filtered = entries.filter(name => name.toLowerCase().includes(q));
+
+      for(const name of filtered){
+        const path = current === "/" ? "/"+name : current+"/"+name;
+        const node = state.fs[path];
+        if(!node) continue;
+
+        const card = document.createElement("div");
+        card.className = "file";
+        card.innerHTML = `
+          <div class="fhead">
+            <div class="ficon"></div>
+            <div style="min-width:0">
+              <div class="fname"></div>
+              <div class="fmeta"></div>
+            </div>
+          </div>
+        `;
+        $(".ficon", card).textContent = fileIcon(node, name);
+        $(".fname", card).textContent = name;
+
+        const ext = getExt(name);
+        const meta =
+          node.type==="dir" ? ((node.children?.length||0)+" élément(s)")
+          : (ext ? ("."+ext.toUpperCase()) : (node.mime || "fichier"));
+        $(".fmeta", card).textContent = meta;
+
+        card.addEventListener("dblclick", ()=> openFile(path));
+        card.addEventListener("contextmenu", (e)=>{
+          e.preventDefault();
+          const items = [];
+          items.push({label:"Ouvrir", sub:"", action: ()=> openFile(path)});
+          items.push({label:"Renommer", sub:"", action: ()=>{
+            const nn = prompt("Nouveau nom :", name);
+            if(nn && renamePath(path, nn)) render();
+          }});
+          if(current === "/Corbeille"){
+            items.push({label:"Restaurer", sub:"vers Documents", action: ()=>{ if(restoreFromTrash(path, "/Documents")) render(); }});
+            items.push({label:"Supprimer définitivement", sub:"", action: ()=>{
+              removeChild("/Corbeille", name);
+              delete state.fs[path];
+              Object.keys(state.fs).forEach(k=>{ if(k.startsWith(path+"/")) delete state.fs[k]; });
+              saveState();
+              render();
+            }});
+          } else {
+            items.push({label:"Couper", sub:"", action: ()=>{ clipboard = {path, action:"cut"}; btnPaste.disabled=false; }});
+            items.push({label:"Copier", sub:"", action: ()=>{ clipboard = {path, action:"copy"}; btnPaste.disabled=false; }});
+            items.push({label:"Supprimer", sub:"vers Corbeille", action: ()=>{ moveToTrash(path); render(); }});
+          }
+          openContext(e.clientX, e.clientY, items);
+        });
+        grid.appendChild(card);
+      }
+
+      if(!filtered.length){
+        const empty = document.createElement("div");
+        empty.style.color = "rgba(255,255,255,.55)";
+        empty.style.fontSize = "12px";
+        empty.style.padding = "10px";
+        empty.textContent = "Aucun élément.";
+        grid.appendChild(empty);
+      }
+    }
+
+    function render(){
+      renderPathbar();
+      renderGrid();
+      setPlaceActive();
+    }
+
+    btnUp.addEventListener("click", ()=>{ const p = parentPath(current); if(p){ current=p; render(); } });
+    btnNew.addEventListener("click", ()=>{ const newPath = createTextFile(current); render(); openTextEditor(newPath); });
+
+    btnPaste.addEventListener("click", ()=>{
+      if(!clipboard) return;
+      const src = clipboard.path;
+      if(!exists(src)) { clipboard=null; btnPaste.disabled=true; return; }
+      const name = baseName(src);
+      const srcNode = state.fs[src];
+      const dstDir = isDir(current) ? current : "/Documents";
+
+      let newName = name, i=1;
+      while(state.fs[dstDir].children.includes(newName)){ i++; newName = name + " ("+i+")"; }
+      const dst = (dstDir==="/" ? "/"+newName : dstDir+"/"+newName);
+
+      state.fs[dst] = structuredClone(srcNode);
+      addChild(dstDir, newName);
+
+      if(srcNode.type==="dir"){
+        Object.keys(state.fs).forEach(k=>{
+          if(k.startsWith(src+"/")){
+            const tail = k.slice(src.length);
+            state.fs[dst+tail] = structuredClone(state.fs[k]);
+          }
+        });
+      }
+
+      if(clipboard.action==="cut"){
+        const pp = parentPath(src);
+        if(pp) removeChild(pp, baseName(src));
+        delete state.fs[src];
+        Object.keys(state.fs).forEach(k=>{ if(k.startsWith(src+"/")) delete state.fs[k]; });
+      }
+
+      clipboard=null;
+      btnPaste.disabled=true;
+      saveState();
+      render();
+    });
+
+    search.addEventListener("input", renderGrid);
+
+    renderSidebar();
+    render();
+
+    makeWindow({
+      title:"Explorateur",
+      badge:"📁",
+      contentNode: root,
+      width: 740, height: 460,
+      x: rand(70, 190), y: rand(50, 120),
+      appId:"explorer"
+    });
+  }
+
+  // -------------------- Text editor --------------------
+  function openTextEditor(path){
+    if(!isFile(path)) return;
+    const node = state.fs[path];
+
+    const wrap = document.createElement("div");
+    wrap.className = "notesWrap";
+
+    const top = document.createElement("div");
+    top.className = "toolbar";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn good";
+    saveBtn.textContent = "Sauvegarder";
+
+    const renameBtn = document.createElement("button");
+    renameBtn.className = "btn";
+    renameBtn.textContent = "Renommer";
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn bad";
+    delBtn.textContent = "Supprimer";
+
+    top.appendChild(saveBtn);
+    top.appendChild(renameBtn);
+    top.appendChild(delBtn);
+
+    const ta = document.createElement("textarea");
+    ta.value = node.content || "";
+
+    const status = document.createElement("div");
+    status.className = "statusline";
+    const left = document.createElement("div");
+    left.textContent = path;
+    const right = document.createElement("div");
+    right.textContent = "Autosave: ON";
+    status.appendChild(left);
+    status.appendChild(right);
+
+    wrap.appendChild(top);
+    wrap.appendChild(status);
+    wrap.appendChild(ta);
+
+    let autosaveTimer = null;
+
+    function save(){
+      state.fs[path].content = ta.value;
+      saveState();
+      right.textContent = "Sauvegardé ✔";
+      setTimeout(()=> right.textContent="Autosave: ON", 900);
+    }
+
+    ta.addEventListener("input", ()=>{
+      right.textContent = "Modifié…";
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(save, 650);
+    });
+
+    saveBtn.addEventListener("click", save);
+
+    renameBtn.addEventListener("click", ()=>{
+      const nn = prompt("Nouveau nom :", baseName(path));
+      if(!nn) return;
+      const ok = renamePath(path, nn);
+      if(!ok) return openMessage("Renommer", "Impossible (nom déjà pris ?).");
+      openExplorer(parentPath(path) || "/Documents");
+    });
+
+    delBtn.addEventListener("click", ()=>{
+      if(confirm("Envoyer dans la Corbeille ?")){
+        moveToTrash(path);
+        openExplorer("/Documents");
+      }
+    });
+
+    makeWindow({
+      title: baseName(path),
+      badge:"📝",
+      contentNode: wrap,
+      width: 660, height: 460,
+      x: rand(90, 220), y: rand(60, 140),
+      appId:"editor"
+    });
+  }
+
+  // -------------------- Notes app --------------------
+  function openNotes(){
+    const wrap = document.createElement("div");
+    wrap.className = "notesWrap";
+
+    const bar = document.createElement("div");
+    bar.className = "toolbar";
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "btn bad";
+    clearBtn.textContent = "Effacer";
+
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "btn cyan";
+    exportBtn.textContent = "Exporter .txt";
+
+    bar.appendChild(clearBtn);
+    bar.appendChild(exportBtn);
+
+    const ta = document.createElement("textarea");
+    ta.value = state.notes || "";
+
+    const status = document.createElement("div");
+    status.className = "statusline";
+    const left = document.createElement("div");
+    left.textContent = "Notes (sauvegarde locale)";
+    const right = document.createElement("div");
+    right.textContent = "Autosave: ON";
+    status.appendChild(left);
+    status.appendChild(right);
+
+    wrap.appendChild(bar);
+    wrap.appendChild(status);
+    wrap.appendChild(ta);
+
+    let autosaveTimer = null;
+    ta.addEventListener("input", ()=>{
+      right.textContent = "Modifié…";
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(()=>{
+        state.notes = ta.value;
+        saveState();
+        right.textContent = "Sauvegardé ✔";
+        setTimeout(()=> right.textContent="Autosave: ON", 900);
+      }, 650);
+    });
+
+    clearBtn.addEventListener("click", ()=>{
+      if(confirm("Effacer les notes ?")){
+        ta.value = "";
+        state.notes = "";
+        saveState();
+      }
+    });
+
+    exportBtn.addEventListener("click", ()=>{
+      const blob = new Blob([ta.value], {type:"text/plain"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Notes_SunsetOS.txt";
+      a.click();
+      setTimeout(()=> URL.revokeObjectURL(a.href), 400);
+    });
+
+    makeWindow({
+      title:"Notes",
+      badge:"📝",
+      contentNode: wrap,
+      width: 720, height: 500,
+      x: rand(90, 220), y: rand(50, 140),
+      appId:"notes"
+    });
+  }
+
+  // -------------------- Terminal --------------------
+  function openTerminal(){
+    const term = document.createElement("div");
+    term.className = "term";
+
+    const out = document.createElement("div");
+    out.className = "termOut";
+
+    const row = document.createElement("div");
+    row.className = "termRow";
+
+    const prompt = document.createElement("div");
+    prompt.className = "prompt";
+    prompt.textContent = "sunset@os:~$";
+
+    const inp = document.createElement("input");
+    inp.className = "input";
+    inp.style.flex = "1";
+    inp.placeholder = "help";
+
+    row.appendChild(prompt);
+    row.appendChild(inp);
+
+    term.appendChild(out);
+    term.appendChild(row);
+
+    function print(line, color=""){
+      const div = document.createElement("div");
+      div.textContent = line;
+      if(color) div.style.color = color;
+      out.appendChild(div);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function resolvePath(p){
+      if(!p) return "/";
+      if(p === "~") return "/Documents";
+      if(!p.startsWith("/")) return "/"+p;
+      return p;
+    }
+
+    function listDir(path){
+      if(!isDir(path)) return null;
+      return (state.fs[path].children||[]).slice().sort((a,b)=>a.localeCompare(b,"fr"));
+    }
+
+    function cmdHelp(){
+      print("Commandes:");
+      print("  help");
+      print("  time");
+      print("  ls <path>");
+      print("  cat <file>");
+      print("  touch <path/nom.txt>");
+      print("  mkdir <path/nom>");
+      print("  rm <path>            (corbeille)");
+      print("  restore <trashName>  (vers /Documents)");
+      print("  open <app>           (explorer|notes|settings|easyjet|appmgr)");
+      print("  ej list              (apps EJ installées)");
+      print("  ej run <id>");
+      print("  ej uninstall <id>");
+      print("  clear");
+    }
+
+    function cmdTime(){
+      print("Heure: " + fmtTime(new Date()));
+      print("Mode: offline");
+    }
+
+    function cmdLs(arg){
+      const p = resolvePath(arg || "/");
+      const l = listDir(p);
+      if(!l) return print("ls: dossier introuvable: "+p, "rgba(255,107,107,.9)");
+      print(p + ":");
+      l.forEach(n=> print("  " + n));
+    }
+
+    function cmdCat(arg){
+      const p = resolvePath(arg);
+      if(!isFile(p)) return print("cat: fichier introuvable: "+p, "rgba(255,107,107,.9)");
+      const node = state.fs[p];
+      print("----- "+p+" -----");
+      (node.content || "").split("\n").forEach(line=>print(line));
+      print("------------------");
+    }
+
+    function cmdTouch(arg){
+      const p = resolvePath(arg);
+      const pp = parentPath(p);
+      if(!pp || !isDir(pp)) return print("touch: chemin invalide", "rgba(255,107,107,.9)");
+      const name = baseName(p);
+      if(state.fs[pp].children.includes(name)) return print("touch: existe déjà", "rgba(255,209,102,.9)");
+      addChild(pp, name);
+      state.fs[p] = {type:"file", mime:"text/plain", content:""};
+      saveState();
+      print("OK: créé " + p, "rgba(124,255,178,.9)");
+    }
+
+    function cmdMkdir(arg){
+      const p = resolvePath(arg);
+      const pp = parentPath(p);
+      if(!pp || !isDir(pp)) return print("mkdir: parent invalide", "rgba(255,107,107,.9)");
+      const name = baseName(p);
+      if(state.fs[pp].children.includes(name)) return print("mkdir: existe déjà", "rgba(255,209,102,.9)");
+      addChild(pp, name);
+      state.fs[p] = {type:"dir", children:[]};
+      saveState();
+      print("OK: dossier créé " + p, "rgba(124,255,178,.9)");
+    }
+
+    function cmdRm(arg){
+      const p = resolvePath(arg);
+      if(!exists(p)) return print("rm: introuvable: "+p, "rgba(255,107,107,.9)");
+      if(moveToTrash(p)) print("OK: envoyé dans /Corbeille", "rgba(124,255,178,.9)");
+      else print("rm: impossible", "rgba(255,107,107,.9)");
+    }
+
+    function cmdRestore(arg){
+      if(!arg) return print("restore: ex: restore MonFichier.txt", "rgba(255,209,102,.9)");
+      const p = "/Corbeille/" + arg;
+      if(!exists(p)) return print("restore: pas dans la corbeille: "+arg, "rgba(255,107,107,.9)");
+      restoreFromTrash(p, "/Documents");
+      print("OK: restauré vers /Documents", "rgba(124,255,178,.9)");
+    }
+
+    function cmdOpen(arg){
+      const a = (arg||"").toLowerCase();
+      if(a==="explorer") openExplorer("/");
+      else if(a==="notes") openNotes();
+      else if(a==="settings") openSettings();
+      else if(a==="easyjet") openEasyJet();
+      else if(a==="appmgr") openAppManager();
+      else print("open: apps: explorer|notes|settings|easyjet|appmgr", "rgba(255,209,102,.9)");
+    }
+
+    function cmdEJ(rest){
+      const [sub, ...args] = rest.trim().split(/\s+/);
+      const s = (sub||"").toLowerCase();
+      if(s==="list"){
+        const list = Object.values(state.installedApps||{});
+        if(!list.length) return print("Aucune app EJ installée.", "rgba(255,209,102,.9)");
+        list.forEach(a=> print(`${a.id}  -  ${a.name}  (v${a.version||"1.0"})`));
+        return;
+      }
+      if(s==="run"){
+        const id = args.join(" ").trim();
+        if(!id) return print("ej run <id>", "rgba(255,209,102,.9)");
+        if(!state.installedApps?.[id]) return print("Introuvable: "+id, "rgba(255,107,107,.9)");
+        openInstalledEJ(id);
+        return;
+      }
+      if(s==="uninstall"){
+        const id = args.join(" ").trim();
+        if(!id) return print("ej uninstall <id>", "rgba(255,209,102,.9)");
+        if(!state.installedApps?.[id]) return print("Introuvable: "+id, "rgba(255,107,107,.9)");
+        uninstallEJ(id);
+        print("Désinstallé: "+id, "rgba(124,255,178,.9)");
+        return;
+      }
+      print("ej: subcommands: list | run <id> | uninstall <id>", "rgba(255,209,102,.9)");
+    }
+
+    function run(line){
+      const t = line.trim();
+      if(!t) return;
+      print("sunset@os:~$ " + t, "rgba(124,231,255,.9)");
+      const [cmd, ...rest] = t.split(/\s+/);
+      const arg = rest.join(" ");
+
+      switch(cmd){
+        case "help": cmdHelp(); break;
+        case "time": cmdTime(); break;
+        case "ls": cmdLs(arg); break;
+        case "cat": cmdCat(arg); break;
+        case "touch": cmdTouch(arg); break;
+        case "mkdir": cmdMkdir(arg); break;
+        case "rm": cmdRm(arg); break;
+        case "restore": cmdRestore(arg); break;
+        case "open": cmdOpen(arg); break;
+        case "ej": cmdEJ(arg); break;
+        case "clear": out.innerHTML=""; break;
+        default: print("Commande inconnue: "+cmd+" (help)", "rgba(255,107,107,.9)");
+      }
+    }
+
+    inp.addEventListener("keydown", (e)=>{
+      if(e.key==="Enter"){
+        const v = inp.value;
+        inp.value = "";
+        run(v);
+      }
+    });
+
+    print("SunsetOS Terminal v2");
+    print("Tape 'help' pour la liste des commandes.");
+    setTimeout(()=> inp.focus(), 50);
+
+    makeWindow({
+      title:"Terminal",
+      badge:"⌘",
+      contentNode: term,
+      width: 780, height: 470,
+      x: rand(90, 220), y: rand(40, 120),
+      appId:"terminal"
+    });
+  }
+
+  // -------------------- Easy Jet (Browser) --------------------
+  function openEasyJet(){
+    const wrap = document.createElement("div");
+    wrap.style.width = "100%";
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.minHeight = "0";
+
+    const bar = document.createElement("div");
+    bar.className = "toolbar";
+    bar.style.padding = "12px";
+    bar.style.borderBottom = "1px solid rgba(255,255,255,.10)";
+    bar.style.background = "rgba(255,255,255,.03)";
+
+    const backBtn = document.createElement("button"); backBtn.className="btn"; backBtn.textContent="←";
+    const fwdBtn  = document.createElement("button"); fwdBtn.className="btn";  fwdBtn.textContent="→";
+    const reloadBtn=document.createElement("button"); reloadBtn.className="btn cyan"; reloadBtn.textContent="⟳";
+    const homeBtn = document.createElement("button"); homeBtn.className="btn"; homeBtn.textContent="⌂";
+
+    const url = document.createElement("input");
+    url.className = "input";
+    url.style.flex = "1";
+    url.placeholder = "easyjet://home  ou  https://example.com";
+
+    const goBtn  = document.createElement("button"); goBtn.className="btn good"; goBtn.textContent="GO";
+    const favBtn = document.createElement("button"); favBtn.className="btn"; favBtn.textContent="★";
+
+    bar.appendChild(backBtn); bar.appendChild(fwdBtn); bar.appendChild(reloadBtn);
+    bar.appendChild(homeBtn); bar.appendChild(url); bar.appendChild(goBtn); bar.appendChild(favBtn);
+
+    const body = document.createElement("div");
+    body.style.flex="1"; body.style.minHeight="0"; body.style.display="flex";
+    body.style.background="rgba(0,0,0,.12)";
+
+    const side = document.createElement("div");
+    side.style.width="230px"; side.style.minWidth="230px";
+    side.style.borderRight="1px solid rgba(255,255,255,.10)";
+    side.style.background="rgba(255,255,255,.03)";
+    side.style.padding="12px"; side.style.overflow="auto";
+
+    const sideTitle = document.createElement("div");
+    sideTitle.style.fontWeight="900";
+    sideTitle.style.marginBottom="10px";
+    sideTitle.textContent="Favoris";
+
+    const favList = document.createElement("div");
+    favList.style.display="flex";
+    favList.style.flexDirection="column";
+    favList.style.gap="8px";
+
+    side.appendChild(sideTitle);
+    side.appendChild(favList);
+
+    const view = document.createElement("div");
+    view.style.flex="1"; view.style.minHeight="0";
+    view.style.display="flex"; view.style.flexDirection="column";
+
+    const info = document.createElement("div");
+    info.style.fontSize="12px";
+    info.style.color="rgba(255,255,255,.65)";
+    info.style.padding="10px 12px";
+    info.style.borderBottom="1px solid rgba(255,255,255,.08)";
+    info.textContent="Astuce: certains sites bloquent l’affichage en iframe (normal).";
+
+    const internal = document.createElement("div");
+    internal.style.flex="1"; internal.style.minHeight="0";
+    internal.style.display="none";
+    internal.style.padding="14px";
+    internal.style.overflow="auto";
+
+    const frame = document.createElement("iframe");
+    frame.style.flex="1"; frame.style.minHeight="0";
+    frame.style.border="0";
+    frame.style.width="100%";
+    frame.style.background="rgba(0,0,0,.18)";
+    frame.setAttribute("sandbox", "allow-forms allow-scripts allow-same-origin allow-popups");
+
+    view.appendChild(info);
+    view.appendChild(internal);
+    view.appendChild(frame);
+
+    body.appendChild(side);
+    body.appendChild(view);
+
+    wrap.appendChild(bar);
+    wrap.appendChild(body);
+
+    state.easyjet = state.easyjet || { favorites: ["easyjet://home", "easyjet://help", "https://example.com"] };
+
+    let hist = [];
+    let idx = -1;
+
+    function normalizeInput(s){
+      const t = (s||"").trim();
+      if(!t) return "easyjet://home";
+      if(t.startsWith("easyjet://")) return t;
+      if(/^https?:\/\//i.test(t)) return t;
+      return "https://" + t;
+    }
+
+    function setInternalPage(html){
+      internal.style.display="block";
+      frame.style.display="none";
+      internal.innerHTML = html;
+    }
+    function setIframe(src){
+      internal.style.display="none";
+      frame.style.display="block";
+      frame.src = src;
+    }
+
+    function renderFavs(){
+      favList.innerHTML="";
+      for(const f of state.easyjet.favorites){
+        const b = document.createElement("button");
+        b.className="btn";
+        b.style.textAlign="left";
+        b.style.width="100%";
+        b.textContent=f;
+        b.addEventListener("click", ()=> navigate(f, true));
+        favList.appendChild(b);
+      }
+
+      const add = document.createElement("button");
+      add.className="btn good";
+      add.style.marginTop="10px";
+      add.textContent="+ Ajouter favori";
+      add.addEventListener("click", ()=>{
+        const v = normalizeInput(url.value);
+        if(!state.easyjet.favorites.includes(v)){
+          state.easyjet.favorites.unshift(v);
+          saveState();
+          renderFavs();
+        }
+      });
+      favList.appendChild(add);
+
+      const del = document.createElement("button");
+      del.className="btn bad";
+      del.style.marginTop="8px";
+      del.textContent="Supprimer favori…";
+      del.addEventListener("click", ()=>{
+        const v = prompt("Quel favori supprimer ? (URL exacte)");
+        if(!v) return;
+        state.easyjet.favorites = state.easyjet.favorites.filter(x => x !== v.trim());
+        saveState();
+        renderFavs();
+      });
+      favList.appendChild(del);
+    }
+
+    function esc(s){ return String(s).replace(/[&<>"]/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m])); }
+
+    function easyjetPage(route){
+      route = (route||"home").toLowerCase();
+      if(route==="home"){
+        const favs = state.easyjet.favorites.map(f=>`<li><a href="#" data-nav="${esc(f)}">${esc(f)}</a></li>`).join("");
+        return `
+          <div style="font-weight:900;font-size:16px;margin-bottom:6px">Easy Jet</div>
+          <div style="color:rgba(255,255,255,.70);font-size:12px;margin-bottom:14px">
+            Navigateur SunsetOS • favoris persistants • iframe sandbox
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="btn cyan" data-nav="easyjet://help">Aide</button>
+            <button class="btn" data-nav="easyjet://about">À propos</button>
+            <button class="btn good" data-nav="https://example.com">Page test</button>
+          </div>
+          <div class="card">
+            <div style="font-weight:900;margin-bottom:8px">Favoris</div>
+            <ul style="margin:0;padding-left:18px;line-height:1.6;font-size:12px;color:rgba(255,255,255,.75)">${favs}</ul>
+          </div>
+        `;
+      }
+      if(route==="help"){
+        return `
+          <div style="font-weight:900;font-size:16px;margin-bottom:6px">Aide — Easy Jet</div>
+          <div style="color:rgba(255,255,255,.75);font-size:12px;line-height:1.5">
+            • Tape une URL (ex: <b>example.com</b>) puis <b>GO</b><br>
+            • Pages internes: <b>easyjet://home</b>, <b>easyjet://help</b>, <b>easyjet://about</b><br>
+            • Certains sites refusent l’iframe (page blanche = normal).<br>
+            • Favoris: ★ ajoute l’URL actuelle.
+          </div>
+        `;
+      }
+      if(route==="about"){
+        return `
+          <div style="font-weight:900;font-size:16px;margin-bottom:6px">À propos</div>
+          <div style="color:rgba(255,255,255,.75);font-size:12px;line-height:1.5">
+            Easy Jet v1<br>
+            Rendu via iframe sandbox.<br>
+            Stockage favoris: localStorage (SunsetOS).
+          </div>
+        `;
+      }
+      return `
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">Page inconnue</div>
+        <div style="color:rgba(255,255,255,.75);font-size:12px">Retour: <a href="#" data-nav="easyjet://home">easyjet://home</a></div>
+      `;
+    }
+
+    function wireInternalLinks(){
+      internal.querySelectorAll("[data-nav]").forEach(a=>{
+        a.addEventListener("click", (e)=>{
+          e.preventDefault();
+          navigate(a.getAttribute("data-nav"), true);
+        });
+      });
+    }
+
+    function navigate(target, push){
+      const n = normalizeInput(target);
+      url.value = n;
+
+      if(push){
+        hist = hist.slice(0, idx+1);
+        hist.push(n);
+        idx++;
+      }
+
+      if(n.startsWith("easyjet://")){
+        const route = n.slice("easyjet://".length).trim() || "home";
+        setInternalPage(easyjetPage(route));
+        wireInternalLinks();
+        return;
+      }
+      setIframe(n);
+    }
+
+    backBtn.addEventListener("click", ()=>{ if(idx>0){ idx--; navigate(hist[idx], false); }});
+    fwdBtn.addEventListener("click", ()=>{ if(idx<hist.length-1){ idx++; navigate(hist[idx], false); }});
+    reloadBtn.addEventListener("click", ()=>{ if(idx>=0) navigate(hist[idx], false); else navigate(url.value, true); });
+    homeBtn.addEventListener("click", ()=> navigate("easyjet://home", true));
+    goBtn.addEventListener("click", ()=> navigate(url.value, true));
+    url.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); navigate(url.value, true);} });
+    favBtn.addEventListener("click", ()=>{
+      const v = normalizeInput(url.value);
+      if(!state.easyjet.favorites.includes(v)){
+        state.easyjet.favorites.unshift(v);
+        saveState();
+        renderFavs();
+      }
+    });
+
+    renderFavs();
+    navigate("easyjet://home", true);
+
+    makeWindow({
+      title:"Easy Jet",
+      badge:"🚀",
+      contentNode: wrap,
+      width: 920, height: 560,
+      x: rand(70, 180), y: rand(40, 110),
+      appId:"easyjet"
+    });
+  }
+
+  // -------------------- App Manager --------------------
+  function openAppManager(){
+    const wrap = document.createElement("div");
+    wrap.className = "settings"; // reuse spacing
+
+    const top = document.createElement("div");
+    top.className = "toolbar";
+
+    const refreshBtn = document.createElement("button");
+    refreshBtn.className = "btn cyan";
+    refreshBtn.textContent = "Rafraîchir";
+
+    const wipeBtn = document.createElement("button");
+    wipeBtn.className = "btn bad";
+    wipeBtn.textContent = "Tout désinstaller";
+
+    top.appendChild(refreshBtn);
+    top.appendChild(wipeBtn);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const title = document.createElement("div");
+    title.style.fontWeight="900";
+    title.textContent = "Apps installées (.EJ)";
+
+    const listWrap = document.createElement("div");
+    listWrap.style.display="flex";
+    listWrap.style.flexDirection="column";
+    listWrap.style.gap="8px";
+
+    card.appendChild(title);
+    card.appendChild(listWrap);
+
+    wrap.appendChild(top);
+    wrap.appendChild(card);
+
+    function render(){
+      listWrap.innerHTML = "";
+      const apps = Object.values(state.installedApps || {}).sort((a,b)=>a.name.localeCompare(b.name,"fr"));
+      if(!apps.length){
+        const p = document.createElement("div");
+        p.style.color="rgba(255,255,255,.65)";
+        p.style.fontSize="12px";
+        p.textContent = "Aucune app installée. (Astuce: Téléchargements → Demo.EJ)";
+        listWrap.appendChild(p);
+        return;
+      }
+      for(const a of apps){
+        const row = document.createElement("div");
+        row.className = "trow";
+        row.innerHTML = `
+          <div>
+            <div class="name">${a.icon || "📦"} ${a.name}</div>
+            <div class="meta">ID: ${a.id} • v${a.version || "1.0"}</div>
+          </div>
+          <div class="meta">${(a.entryHtml?.length||0)} chars</div>
+          <div class="actions"></div>
+        `;
+        const actions = $(".actions", row);
+
+        const openBtn = document.createElement("button");
+        openBtn.className="btn good";
+        openBtn.textContent="Ouvrir";
+        openBtn.addEventListener("click", ()=> openInstalledEJ(a.id));
+
+        const delBtn = document.createElement("button");
+        delBtn.className="btn bad";
+        delBtn.textContent="Désinstaller";
+        delBtn.addEventListener("click", ()=>{
+          if(confirm(`Désinstaller ${a.name} ?`)){
+            uninstallEJ(a.id);
+            render();
+          }
+        });
+
+        actions.appendChild(openBtn);
+        actions.appendChild(delBtn);
+
+        listWrap.appendChild(row);
+      }
+    }
+
+    refreshBtn.addEventListener("click", ()=> render());
+    wipeBtn.addEventListener("click", ()=>{
+      if(confirm("Désinstaller TOUTES les apps .EJ ?")){
+        state.installedApps = {};
+        saveState();
+        renderStartApps(startSearch.value || "");
+        render();
+      }
+    });
+
+    render();
+
+    makeWindow({
+      title:"App Manager",
+      badge:"🧩",
+      contentNode: wrap,
+      width: 720, height: 460,
+      x: rand(110, 240), y: rand(60, 150),
+      appId:"appmgr"
+    });
+  }
+
+  // -------------------- Settings --------------------
+  function openSettings(){
+    const wrap = document.createElement("div");
+    wrap.className = "settings";
+
+    const card1 = document.createElement("div");
+    card1.className = "card";
+    card1.innerHTML = `<div style="font-weight:900">Interface</div>`;
+
+    const glowRow = document.createElement("div");
+    glowRow.className="row";
+    glowRow.innerHTML = `<div class="k">Glow du wallpaper</div><div class="switch"><div class="knob"></div></div>`;
+    const glowSwitch = $(".switch", glowRow);
+    glowSwitch.classList.toggle("on", !!state.theme.glow);
+
+    const compactRow = document.createElement("div");
+    compactRow.className="row";
+    compactRow.innerHTML = `<div class="k">Mode compact (icônes)</div><div class="switch"><div class="knob"></div></div>`;
+    const compactSwitch = $(".switch", compactRow);
+    compactSwitch.classList.toggle("on", !!state.theme.compact);
+
+    const resetRow = document.createElement("div");
+    resetRow.className="row";
+    resetRow.innerHTML = `<div class="k">Réinitialiser</div><button class="btn bad">Reset storage</button>`;
+    const resetBtn = $(".btn", resetRow);
+
+    card1.appendChild(glowRow);
+    card1.appendChild(compactRow);
+    card1.appendChild(resetRow);
+
+    const card2 = document.createElement("div");
+    card2.className="card";
+    card2.innerHTML = `
+      <div style="font-weight:900">Système</div>
+      <div class="row"><div class="k">Mode</div><div class="v">Offline</div></div>
+      <div class="row"><div class="k">Stockage</div><div class="v">localStorage</div></div>
+      <div class="row"><div class="k">Apps EJ</div><div class="v">${Object.keys(state.installedApps||{}).length}</div></div>
+    `;
+
+    wrap.appendChild(card1);
+    wrap.appendChild(card2);
+
+    glowSwitch.addEventListener("click", ()=>{
+      state.theme.glow = !state.theme.glow;
+      glowSwitch.classList.toggle("on", state.theme.glow);
+      applyTheme();
+      saveState();
+    });
+
+    compactSwitch.addEventListener("click", ()=>{
+      state.theme.compact = !state.theme.compact;
+      compactSwitch.classList.toggle("on", state.theme.compact);
+      applyTheme();
+      saveState();
+    });
+
+    resetBtn.addEventListener("click", ()=>{
+      if(confirm("Supprimer tout (fichiers + notes + apps EJ) ?")){
+        localStorage.removeItem(LS_KEY);
+        location.reload();
+      }
+    });
+
+    makeWindow({
+      title:"Paramètres",
+      badge:"⚙️",
+      contentNode: wrap,
+      width: 660, height: 440,
+      x: rand(110, 240), y: rand(60, 140),
+      appId:"settings"
+    });
+  }
+
+  // -------------------- About --------------------
+  function openAbout(){
+    const wrap = document.createElement("div");
+    wrap.style.width="100%";
+    wrap.style.padding="12px";
+    wrap.style.display="flex";
+    wrap.style.flexDirection="column";
+    wrap.style.gap="10px";
+    wrap.style.minHeight="0";
+
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      <div style="font-weight:900">SunsetOS</div>
+      <div style="color:rgba(255,255,255,.75); font-size:12px; line-height:1.35">
+        OS web offline: fenêtres, explorateur, terminal, notes, Easy Jet, apps .EJ.
+      </div>
+      <div class="row"><div class="k">Version</div><div class="v">2.0</div></div>
+      <div class="row"><div class="k">Langue</div><div class="v">${navigator.language}</div></div>
+      <div class="row"><div class="k">Apps EJ</div><div class="v">${Object.keys(state.installedApps||{}).length}</div></div>
+    `;
+    wrap.appendChild(card);
+
+    makeWindow({
+      title:"À propos",
+      badge:"ℹ️",
+      contentNode: wrap,
+      width: 560, height: 360,
+      x: rand(140, 260), y: rand(70, 160),
+      appId:"about"
+    });
+  }
+
+  // -------------------- Message dialog --------------------
+  function openMessage(title, text){
+    const wrap = document.createElement("div");
+    wrap.style.width="100%";
+    wrap.style.padding="12px";
+    wrap.style.display="flex";
+    wrap.style.flexDirection="column";
+    wrap.style.gap="10px";
+
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `<div style="font-weight:900">${title}</div><div style="font-size:12px;color:rgba(255,255,255,.75);white-space:pre-wrap;line-height:1.35"></div>`;
+    card.querySelector("div:last-child").textContent = text;
+
+    const ok = document.createElement("button");
+    ok.className="btn cyan";
+    ok.textContent="OK";
+
+    wrap.appendChild(card);
+    wrap.appendChild(ok);
+
+    const wid = makeWindow({ title, badge:"ℹ️", contentNode: wrap, width: 480, height: 270, x: rand(180, 320), y: rand(120, 220), appId:"msg" });
+    ok.addEventListener("click", ()=> closeWindow(wid));
+  }
+
+  // -------------------- Start menu --------------------
+  function renderStartApps(filter=""){
+    startApps.innerHTML = "";
+    const q = filter.trim().toLowerCase();
+
+    const core = APPS.filter(a => !q || a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q));
+    for(const app of core){
+      const b = document.createElement("button");
+      b.className = "appbtn";
+      b.innerHTML = `<div class="mini">${app.icon}</div><div class="txt"><b>${app.name}</b><span>${app.desc}</span></div>`;
+      b.addEventListener("click", ()=>{ closeStart(); app.open(); });
+      startApps.appendChild(b);
+    }
+
+    // EJ installed apps
+    const installed = Object.values(state.installedApps || {})
+      .filter(a => !q || a.name.toLowerCase().includes(q) || a.id.toLowerCase().includes(q));
+
+    for(const a of installed){
+      const b = document.createElement("button");
+      b.className = "appbtn";
+      b.innerHTML = `<div class="mini">${a.icon || "📦"}</div><div class="txt"><b>${a.name}</b><span>EJ App • v${a.version||"1.0"} • ${a.id}</span></div>`;
+      b.addEventListener("click", ()=>{ closeStart(); openInstalledEJ(a.id); });
+      startApps.appendChild(b);
+    }
+  }
+
+  function toggleStart(){
+    startMenu.classList.toggle("open");
+    if(startMenu.classList.contains("open")){
+      startSearch.value = "";
+      renderStartApps("");
+      setTimeout(()=> startSearch.focus(), 20);
+    }
+  }
+  function closeStart(){ startMenu.classList.remove("open"); }
+
+  startBtn.addEventListener("click", (e)=>{ e.stopPropagation(); toggleStart(); });
+  startSearch.addEventListener("input", ()=> renderStartApps(startSearch.value));
+  window.addEventListener("click", (e)=>{
+    if(!e.target.closest("#startMenu") && !e.target.closest("#startBtn")) closeStart();
+  });
+
+  // -------------------- Theme apply --------------------
+  function applyTheme(){
+    $("#wallpaper").style.display = state.theme.glow ? "block" : "none";
+    if(state.theme.compact){
+      desktop.style.gridTemplateColumns = "repeat(auto-fill, minmax(74px, 74px))";
+      desktop.style.gridAutoRows = "86px";
+      $$(".icon").forEach(ic=>{ ic.style.width="74px"; ic.style.height="86px"; });
+    } else {
+      desktop.style.gridTemplateColumns = "repeat(auto-fill, minmax(86px, 86px))";
+      desktop.style.gridAutoRows = "96px";
+      $$(".icon").forEach(ic=>{ ic.style.width=""; ic.style.height=""; });
+    }
+  }
+
+  // -------------------- Taskbar actions --------------------
+  showDeskBtn.addEventListener("click", ()=>{
+    for(const [wid, obj] of windows){
+      obj.minimized = true;
+      obj.el.style.display = "none";
+      const task = $(`.task[data-wid="${wid}"]`, taskMid);
+      if(task) task.classList.remove("active");
+    }
+    focusNone();
+    closeStart();
+  });
+
+  // -------------------- Clock + net --------------------
+  function tick(){
+    clockEl.textContent = fmtTime(new Date());
+    netPill.innerHTML = navigator.onLine ? "<b>Online</b>" : "<b>Offline</b>";
+  }
+  window.addEventListener("online", tick);
+  window.addEventListener("offline", tick);
+
+  // -------------------- Boot --------------------
+  function boot(){
+    tick(); setInterval(tick, 1000);
+    renderDesktop();
+    renderStartApps("");
+    applyTheme();
+  }
+  boot();
+
+})();
+</script>
+</body>
+</html>
