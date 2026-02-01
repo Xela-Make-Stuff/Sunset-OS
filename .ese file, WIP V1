@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ESE Studio</title>
+  <style>
+    :root{
+      --fg:#eef2ff; --muted:#aab2d6;
+      --glass: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+      --good:#7CFFB2; --bad:#FF6B6B; --cyan:#7CE7FF; --gold:#FFD166;
+    }
+    html,body{height:100%;margin:0;overflow:hidden;
+      background: radial-gradient(1200px 800px at 30% 20%, #1a2a52 0%, #0a1022 55%, #050611 100%);
+      color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    *{box-sizing:border-box}
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+      padding:12px;
+      min-height:0;
+    }
+    .panel{
+      border:1px solid var(--stroke);
+      background: rgba(20,24,46,.72);
+      backdrop-filter: blur(14px);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .head{
+      padding:10px 12px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      user-select:none;
+    }
+    .title{font-weight:900;font-size:13px;display:flex;align-items:center;gap:8px;min-width:0}
+    .chip{
+      font-size:12px;color:var(--muted);
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      padding:6px 10px;border-radius:999px;white-space:nowrap;
+    }
+    .btnbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      all:unset;cursor:pointer;
+      padding:8px 10px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      font-size:12px;
+      transition:.12s transform,.12s background,.12s border;
+      display:flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16)}
+    .btn:active{transform:translateY(0)}
+    .btn.good:hover{background:rgba(124,255,178,.12);border-color:rgba(124,255,178,.22)}
+    .btn.bad:hover{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.22)}
+    .btn.cyan:hover{background:rgba(124,231,255,.12);border-color:rgba(124,231,255,.22)}
+
+    .editorWrap{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:0;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .hint b{color:var(--fg)}
+    .kbd{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      padding:2px 6px;
+      border-radius:8px;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      font-size:12px;
+      color:rgba(255,255,255,.85);
+    }
+
+    textarea{
+      width:100%;
+      resize:none;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      color:var(--fg);
+      padding:12px;
+      border-radius:14px;
+      outline:none;
+      font-size:13px;
+      line-height:1.35;
+      overflow:auto;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      white-space:pre;
+      min-height:220px;
+      max-height: calc(100vh - 190px);
+    }
+    textarea:focus{border-color:rgba(124,231,255,.35);box-shadow:0 0 0 4px rgba(124,231,255,.10)}
+
+    .out{
+      flex:1;min-height:0;
+      padding:12px;
+      overflow:auto;
+      background:rgba(0,0,0,.16);
+      font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      font-size:12px;
+      line-height:1.35;
+    }
+    .line{white-space:pre-wrap}
+    .line.sys{color:rgba(124,231,255,.9)}
+    .line.ok{color:rgba(124,255,178,.9)}
+    .line.warn{color:rgba(255,209,102,.92)}
+    .line.err{color:rgba(255,107,107,.9)}
+
+    /* Tiny window system for ESE "window" */
+    #winLayer{position:fixed;inset:0;pointer-events:none}
+    .win{
+      pointer-events:auto;
+      position:absolute;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(15,18,38,.86);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0,0,0,.50);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-width:260px;
+      min-height:160px;
+    }
+    .whead{
+      height:40px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 10px 10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+      cursor:grab;
+      user-select:none;
+    }
+    .whead:active{cursor:grabbing}
+    .wttl{font-weight:900;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .wbtn{
+      all:unset;cursor:pointer;
+      width:30px;height:26px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      display:grid;place-items:center;
+      font-size:12px;
+    }
+    .wbtn:hover{background:rgba(255,107,107,.16);border-color:rgba(255,107,107,.22)}
+    .wbody{
+      flex:1;min-height:0;
+      padding:12px;
+      overflow:auto;
+      font-size:12px;
+      color:rgba(255,255,255,.86);
+      white-space:pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="winLayer"></div>
+
+  <div class="app">
+    <!-- Editor -->
+    <section class="panel">
+      <div class="head">
+        <div class="title">⚡ ESE Studio <span class="chip">ESE v1 (prototype)</span></div>
+        <div class="btnbar">
+          <button class="btn cyan" id="btnDemo">🎛️ Demo</button>
+          <button class="btn good" id="btnRun">▶ RUN</button>
+          <button class="btn bad" id="btnStop">■ STOP</button>
+        </div>
+      </div>
+
+      <div class="editorWrap">
+        <div class="hint">
+          <span><b>Fin bloc</b> <span class="kbd">|</span></span>
+          <span><b>TRUE</b> <span class="kbd">></span></span>
+          <span><b>FALSE</b> <span class="kbd"><</span></span>
+          <span><b>Fin script</b> <span class="kbd">-| -</span></span>
+          <span><b>Commentaire</b> <span class="kbd">#</span></span>
+          <span><b>Var random</b> <span class="kbd">$random</span></span>
+        </div>
+
+        <textarea id="src" spellcheck="false"></textarea>
+      </div>
+    </section>
+
+    <!-- Output -->
+    <section class="panel">
+      <div class="head">
+        <div class="title">🖥️ Console</div>
+        <div class="btnbar">
+          <button class="btn" id="btnClear">🧹 Clear</button>
+        </div>
+      </div>
+      <div class="out" id="out"></div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  // ---------- UI helpers ----------
+  const $ = (q, r=document) => r.querySelector(q);
+  const out = $("#out");
+  const src = $("#src");
+  const winLayer = $("#winLayer");
+
+  function logLine(text, cls=""){
+    const div = document.createElement("div");
+    div.className = "line" + (cls ? " " + cls : "");
+    div.textContent = text;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+  }
+  function clearOut(){ out.innerHTML = ""; }
+
+  // Adaptive textarea: grow until max, then scroll
+  function autosizeTextarea(){
+    src.style.height = "auto";
+    const max = Math.max(220, Math.min(window.innerHeight - 190, 9000));
+    const next = Math.min(src.scrollHeight + 2, max);
+    src.style.height = next + "px";
+  }
+  window.addEventListener("resize", autosizeTextarea);
+  src.addEventListener("input", autosizeTextarea);
+
+  // ---------- Key state (for: if key "Space") ----------
+  const keysDown = new Set();
+  window.addEventListener("keydown", e => keysDown.add(e.code));
+  window.addEventListener("keyup", e => keysDown.delete(e.code));
+
+  function normalizeKeyName(name){
+    // ESE uses "Space", "Enter", "KeyA", etc. We'll accept "Space" as Space.
+    const n = String(name || "").trim();
+    if(!n) return "";
+    if(n.length === 1){
+      const c = n.toUpperCase();
+      if(c >= "A" && c <= "Z") return "Key" + c;
+      if(c >= "0" && c <= "9") return "Digit" + c;
+    }
+    if(n.toLowerCase() === "space") return "Space";
+    if(n.toLowerCase() === "enter") return "Enter";
+    if(n.toLowerCase() === "shift") return "ShiftLeft";
+    if(n.toLowerCase() === "ctrl") return "ControlLeft";
+    if(n.toLowerCase() === "alt") return "AltLeft";
+    return n;
+  }
+
+  // ---------- Tiny window system ----------
+  let zTop = 10;
+  let drag = null;
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+
+  function createWindow(title="ESE Window", width=420, height=240){
+    const w = document.createElement("div");
+    w.className = "win";
+    w.style.width = width + "px";
+    w.style.height = height + "px";
+    w.style.left = rand(40, 160) + "px";
+    w.style.top  = rand(40, 140) + "px";
+    w.style.zIndex = (++zTop);
+
+    w.innerHTML = `
+      <div class="whead">
+        <div class="wttl"></div>
+        <button class="wbtn" title="Fermer">✕</button>
+      </div>
+      <div class="wbody"></div>
+    `;
+    $(".wttl", w).textContent = title;
+
+    w.addEventListener("mousedown", ()=> { w.style.zIndex = (++zTop); });
+    $(".wbtn", w).addEventListener("click", ()=> w.remove());
+
+    $(".whead", w).addEventListener("mousedown", (e)=>{
+      const r = w.getBoundingClientRect();
+      drag = { el:w, ox: e.clientX - r.left, oy: e.clientY - r.top };
+      w.style.zIndex = (++zTop);
+      window.addEventListener("mousemove", onDragMove);
+      window.addEventListener("mouseup", stopDrag, { once:true });
+    });
+
+    winLayer.appendChild(w);
+    return { el:w, body: $(".wbody", w) };
+  }
+  function onDragMove(e){
+    if(!drag) return;
+    const maxX = window.innerWidth - 40;
+    const maxY = window.innerHeight - 40;
+    drag.el.style.left = clamp(e.clientX - drag.ox, 10, maxX) + "px";
+    drag.el.style.top  = clamp(e.clientY - drag.oy, 10, maxY) + "px";
+  }
+  function stopDrag(){
+    drag = null;
+    window.removeEventListener("mousemove", onDragMove);
+  }
+
+  // ---------- ESE parsing ----------
+  function stripComments(line){
+    // If line starts with # or only spaces before # => comment.
+    const t = line.trim();
+    if(!t) return "";
+    if(t.startsWith("#")) return "";
+    return line;
+  }
+
+  function normalizeLines(text){
+    return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  }
+
+  function isEndScript(line){
+    // accept "-|-" or "-|-"
+    const t = line.trim().replace(/\s+/g, "");
+    return t === "-|-" || t === "-|-";
+  }
+  function isEndBlock(line){
+    return line.trim() === "|";
+  }
+
+  function unquote(s){
+    const t = s.trim();
+    if((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))){
+      return t.slice(1, -1);
+    }
+    return t;
+  }
+
+  function parseWindowArgs(rest){
+    // window "Title" width:400 height:300
+    // Title must be in quotes (recommended), but we'll allow bare.
+    let title = "";
+    let width = 420, height = 240;
+
+    // grab first quoted string if present
+    const m = rest.match(/"([^"]*)"/);
+    if(m){ title = m[1]; }
+    else{
+      // maybe first token
+      const tok = rest.trim().split(/\s+/)[0] || "";
+      title = unquote(tok);
+    }
+
+    const w = rest.match(/\bwidth\s*:\s*(\d+)\b/i);
+    const h = rest.match(/\bheight\s*:\s*(\d+)\b/i);
+    if(w) width = parseInt(w[1], 10);
+    if(h) height = parseInt(h[1], 10);
+    return { title, width, height };
+  }
+
+  function parseRandomArgs(rest){
+    // random 1 100   OR random 1 100 -> n
+    const parts = rest.trim().split(/\s+/).filter(Boolean);
+    const a = parseInt(parts[0] || "0", 10);
+    const b = parseInt(parts[1] || "0", 10);
+    let toVar = null;
+    const arrowIdx = parts.indexOf("->");
+    if(arrowIdx >= 0 && parts[arrowIdx+1]) toVar = parts[arrowIdx+1];
+    return { a, b, toVar };
+  }
+
+  function parsePrintArg(rest){
+    // print "text" OR print var OR print "text $random"
+    const t = rest.trim();
+    if(!t) return { kind:"text", value:"" };
+    // If starts with quote, take whole quoted
+    const m = t.match(/^"([\s\S]*)"$/);
+    if(m) return { kind:"text", value:m[1] };
+    if(t.startsWith('"')){
+      const mm = t.match(/^"([^"]*)"/);
+      if(mm) return { kind:"text", value:mm[1] };
+    }
+    return { kind:"expr", value:t };
+  }
+
+  function parseIf(line){
+    // if key "Space"
+    // if n > 50
+    const rest = line.trim().slice(2).trim(); // remove "if"
+    // key condition
+    const km = rest.match(/^key\s+("([^"]+)"|([A-Za-z0-9_]+))$/i);
+    if(km){
+      const keyName = km[2] || km[3] || "";
+      return { type:"if_key", key: normalizeKeyName(unquote(keyName)) };
+    }
+
+    // var compare: <var> <op> <value>
+    // allow: $random too
+    const cm = rest.match(/^([$\w]+)\s*(==|!=|>=|<=|>|<)\s*([$\w]+)$/);
+    if(cm){
+      return { type:"if_cmp", left: cm[1], op: cm[2], right: cm[3] };
+    }
+
+    // fallback
+    return { type:"if_unknown", raw: rest };
+  }
+
+  function parseProgram(text){
+    const rawLines = normalizeLines(text);
+    const lines = [];
+
+    for(let i=0;i<rawLines.length;i++){
+      const l0 = stripComments(rawLines[i]);
+      if(!l0.trim()) continue;
+      lines.push({ text:l0, lineNo:i+1 });
+    }
+
+    // Require end marker -|-
+    if(!lines.some(x => isEndScript(x.text))){
+      return { ok:false, err:`Fin de script manquante : ajoute "-|-" à la fin.` };
+    }
+
+    let idx = 0;
+
+    function parseStatements(stopOn){
+      const stmts = [];
+      while(idx < lines.length){
+        const { text, lineNo } = lines[idx];
+        const t = text.trim();
+
+        if(isEndScript(t)){
+          stmts.push({ kind:"end_script" });
+          idx++;
+          return stmts;
+        }
+        if(stopOn === "block" && isEndBlock(t)){
+          idx++; // consume |
+          return stmts;
+        }
+
+        // IF block
+        if(/^if\b/i.test(t)){
+          const cond = parseIf(t);
+          idx++;
+          const trueStmts = [];
+          const falseStmts = [];
+
+          while(idx < lines.length){
+            const { text:bt, lineNo:bn } = lines[idx];
+            const btTrim = bt.trim();
+
+            if(isEndBlock(btTrim)){
+              idx++; // consume |
+              break;
+            }
+            if(isEndScript(btTrim)){
+              return { ok:false, err:`Bloc "if" non fermé avant -|- (ligne ${bn}). Ajoute "|" avant la fin.` };
+            }
+
+            // Branch lines must start with > or < (recommended)
+            if(btTrim.startsWith(">")){
+              idx++;
+              const innerLine = btTrim.slice(1).trim();
+              // parse this single line as a statement
+              const parsed = parseSingle(innerLine, bn);
+              if(parsed.err) return { ok:false, err: parsed.err };
+              trueStmts.push(parsed.stmt);
+              continue;
+            }
+            if(btTrim.startsWith("<")){
+              idx++;
+              const innerLine = btTrim.slice(1).trim();
+              const parsed = parseSingle(innerLine, bn);
+              if(parsed.err) return { ok:false, err: parsed.err };
+              falseStmts.push(parsed.stmt);
+              continue;
+            }
+
+            // allow nested IF without >/< only if user writes it explicitly with > or <,
+            // otherwise keep strict for simplicity:
+            return { ok:false, err:`Dans un if, chaque ligne doit commencer par ">" ou "<" (ligne ${bn}).` };
+          }
+
+          stmts.push({ kind:"if", cond, then:trueStmts, else:falseStmts, lineNo });
+          continue;
+        }
+
+        const parsed = parseSingle(t, lineNo);
+        if(parsed.err) return { ok:false, err: parsed.err };
+        stmts.push(parsed.stmt);
+        idx++;
+      }
+      return stmts;
+    }
+
+    function parseSingle(t, lineNo){
+      // header line is allowed but ignored
+      if(/^"body\s+type"\s*:\s*"easy script engine"/i.test(t)){
+        return { stmt:{ kind:"noop" } };
+      }
+
+      if(/^print\b/i.test(t)){
+        const arg = parsePrintArg(t.slice(5));
+        return { stmt:{ kind:"print", arg, lineNo } };
+      }
+      if(/^wait\b/i.test(t)){
+        const ms = parseInt(t.slice(4).trim(), 10);
+        if(!Number.isFinite(ms) || ms < 0) return { err:`wait invalide (ligne ${lineNo}). Ex: wait 500` };
+        return { stmt:{ kind:"wait", ms, lineNo } };
+      }
+      if(/^random\b/i.test(t)){
+        const { a, b, toVar } = parseRandomArgs(t.slice(6));
+        if(!Number.isFinite(a) || !Number.isFinite(b)) return { err:`random invalide (ligne ${lineNo}). Ex: random 1 100` };
+        return { stmt:{ kind:"random", a, b, toVar, lineNo } };
+      }
+      if(/^set\b/i.test(t)){
+        // set n 42
+        const parts = t.slice(3).trim().split(/\s+/);
+        const name = parts[0];
+        const val = parts.slice(1).join(" ");
+        if(!name) return { err:`set invalide (ligne ${lineNo}). Ex: set n 10` };
+        return { stmt:{ kind:"set", name, value: val, lineNo } };
+      }
+      if(/^clear\b/i.test(t)){
+        return { stmt:{ kind:"clear", lineNo } };
+      }
+      if(/^window\b/i.test(t)){
+        const args = parseWindowArgs(t.slice(6));
+        return { stmt:{ kind:"window", ...args, lineNo } };
+      }
+      if(isEndBlock(t)){
+        return { err:`"|" inattendu (ligne ${lineNo}). " | " ferme seulement un bloc if.` };
+      }
+      if(isEndScript(t)){
+        return { stmt:{ kind:"end_script", lineNo } };
+      }
+
+      // unknown
+      return { err:`Commande inconnue (ligne ${lineNo}): ${t}` };
+    }
+
+    const stmts = parseStatements();
+    if(stmts && stmts.ok === false) return stmts;
+    return { ok:true, stmts };
+  }
+
+  // ---------- ESE runtime ----------
+  let runToken = 0;
+
+  function replaceVars(str, env){
+    return String(str).replace(/\$[A-Za-z_]\w*/g, (m)=>{
+      const k = m.slice(1);
+      return (k in env) ? String(env[k]) : m;
+    });
+  }
+
+  function evalAtom(token, env){
+    // number? variable? string?
+    const t = String(token);
+    if(/^[-+]?\d+(\.\d+)?$/.test(t)) return Number(t);
+    if(t.startsWith("$")){
+      const k = t.slice(1);
+      return env[k];
+    }
+    // bare word var
+    if(/^[A-Za-z_]\w*$/.test(t)) return env[t];
+    return t;
+  }
+
+  function checkCondition(cond, env){
+    if(cond.type === "if_key"){
+      return keysDown.has(cond.key);
+    }
+    if(cond.type === "if_cmp"){
+      const L = evalAtom(cond.left, env);
+      const R = evalAtom(cond.right, env);
+      switch(cond.op){
+        case "==": return L == R;
+        case "!=": return L != R;
+        case ">":  return Number(L) >  Number(R);
+        case "<":  return Number(L) <  Number(R);
+        case ">=": return Number(L) >= Number(R);
+        case "<=": return Number(L) <= Number(R);
+      }
+      return false;
+    }
+    return false;
+  }
+
+  function pickInt(a,b){
+    const min = Math.min(a,b), max = Math.max(a,b);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  async function runProgram(stmts){
+    const myToken = ++runToken;
+    const env = {}; // user vars
+    env.random = undefined; // allow $random via env.random
+
+    // default "console window" optional
+    let currentWin = null;
+
+    const stopIfCancelled = () => {
+      if(myToken !== runToken) throw new Error("__CANCEL__");
+    };
+
+    async function execOne(s){
+      stopIfCancelled();
+
+      switch(s.kind){
+        case "noop": return;
+        case "clear":
+          clearOut();
+          return;
+        case "print": {
+          let text = "";
+          if(s.arg.kind === "text"){
+            text = replaceVars(s.arg.value, env);
+          }else{
+            // expr: if it's a var name, print it; else raw
+            const v = s.arg.value.trim();
+            if(v.startsWith("$")){
+              text = String(env[v.slice(1)] ?? "");
+            }else if(/^[A-Za-z_]\w*$/.test(v)){
+              text = String(env[v] ?? "");
+            }else{
+              text = replaceVars(v, env);
+            }
+          }
+          logLine(text, "");
+          if(currentWin) currentWin.body.textContent += (text + "\n");
+          return;
+        }
+        case "wait":
+          await new Promise(res => setTimeout(res, s.ms));
+          return;
+        case "random": {
+          const n = pickInt(s.a, s.b);
+          env.random = n;         // $random
+          env["random"] = n;
+          if(s.toVar){
+            env[s.toVar] = n;     // random 1 100 -> n
+          }
+          return;
+        }
+        case "set": {
+          const name = s.name;
+          const raw = s.value.trim();
+          // allow: set n 10, set name "Bob", set n $random
+          let value;
+          if((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))){
+            value = raw.slice(1,-1);
+          }else if(raw.startsWith("$")){
+            value = env[raw.slice(1)];
+          }else if(/^[-+]?\d+(\.\d+)?$/.test(raw)){
+            value = Number(raw);
+          }else{
+            value = replaceVars(raw, env);
+          }
+          env[name] = value;
+          return;
+        }
+        case "window": {
+          const w = createWindow(s.title || "ESE Window", s.width || 420, s.height || 240);
+          w.body.textContent = "";
+          currentWin = w;
+          logLine(`(window) ${s.title || "ESE Window"}`, "sys");
+          return;
+        }
+        case "if": {
+          const ok = checkCondition(s.cond, env);
+          const branch = ok ? s.then : s.else;
+          for(const inner of branch){
+            await execOne(inner);
+          }
+          return;
+        }
+        case "end_script":
+          // just stop here
+          throw new Error("__END__");
+      }
+    }
+
+    logLine("ESE: RUN", "sys");
+    logLine("Astuce: maintiens Space puis RUN pour tester if key.", "warn");
+
+    try{
+      for(const s of stmts){
+        await execOne(s);
+      }
+      logLine("ESE: terminé (sans -|- ?)", "warn");
+    }catch(e){
+      if(e && e.message === "__END__"){
+        logLine("ESE: terminé ✅", "ok");
+        return;
+      }
+      if(e && e.message === "__CANCEL__"){
+        logLine("ESE: stoppé ■", "warn");
+        return;
+      }
+      logLine("Erreur runtime: " + (e?.message || String(e)), "err");
+    }
+  }
+
+  // ---------- Demo ----------
+  const DEMO = `"body type" : "Easy Script Engine"
+
+# Exemple: random + condition + fenêtre
+window "Random Test" width:420 height:240
+
+print "Génération..."
+wait 300
+
+random 1 100
+print "Nombre : $random"
+
+if $random > 50
+  > print "Résultat: GRAND"
+  < print "Résultat: PETIT"
+|
+
+print "Appuie sur Space puis relance RUN pour tester if key"
+
+if key "Space"
+  > print "Space détecté ✅"
+  < print "Space NON détecté ❌"
+|
+
+-|-
+`;
+
+  // ---------- Buttons ----------
+  $("#btnClear").addEventListener("click", clearOut);
+
+  $("#btnDemo").addEventListener("click", ()=>{
+    src.value = DEMO;
+    autosizeTextarea();
+  });
+
+  $("#btnStop").addEventListener("click", ()=>{
+    runToken++; // cancels current run
+  });
+
+  $("#btnRun").addEventListener("click", ()=>{
+    clearOut();
+    const parsed = parseProgram(src.value);
+    if(!parsed.ok){
+      logLine("ESE: ERREUR DE SCRIPT", "err");
+      logLine(parsed.err, "err");
+      return;
+    }
+    runProgram(parsed.stmts);
+  });
+
+  // Boot
+  src.value = DEMO;
+  autosizeTextarea();
+})();
+</script>
+</body>
+</html>
